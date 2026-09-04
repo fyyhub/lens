@@ -17,9 +17,8 @@ export function SiteFavicon({ url, name }: { url: string; name: string }) {
           className="size-5 rounded-sm object-contain"
           loading="lazy"
           onError={() => {
-            setCandidateIndex((current) =>
-              current < candidates.length - 1 ? current + 1 : current,
-            );
+            // Advance past the list so the generic globe icon takes over.
+            setCandidateIndex((current) => current + 1);
           }}
         />
       ) : (
