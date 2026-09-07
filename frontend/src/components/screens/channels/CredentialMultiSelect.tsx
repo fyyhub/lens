@@ -58,11 +58,21 @@ export function CredentialMultiSelect({
       )
     : options;
   const isMultiColumn = filteredOptions.length > 4;
+  const allFilteredSelected =
+    filteredOptions.length > 0 &&
+    filteredOptions.every((item) => value.includes(item.id));
 
   const toggle = (id: string) => {
     onChange(
       value.includes(id) ? value.filter((item) => item !== id) : [...value, id],
     );
+  };
+
+  // Select-all covers the current filter so a search can batch-pick a subset.
+  const selectAllFiltered = () => {
+    const merged = new Set(value);
+    for (const item of filteredOptions) merged.add(item.id);
+    onChange([...merged]);
   };
 
   return (
@@ -129,7 +139,12 @@ export function CredentialMultiSelect({
           />
         </div>
         {filteredOptions.length ? (
-          <div className={cn("grid gap-1", isMultiColumn && "grid-cols-2")}>
+          <div
+            className={cn(
+              "mt-2 grid max-h-60 gap-1 overflow-y-auto",
+              isMultiColumn && "grid-cols-2",
+            )}
+          >
             {filteredOptions.map((item) => {
               const checked = value.includes(item.id);
               const isAvailable = item.enabled && item.api_key.trim();
@@ -164,20 +179,32 @@ export function CredentialMultiSelect({
             {locale === "zh-CN" ? "没有匹配密钥" : "No matching keys"}
           </div>
         )}
-        {selectedOptions.length ? (
+        {options.length ? (
           <div className="mt-2 flex items-center justify-between border-t pt-2 text-xs text-muted-foreground">
             <span>
               {locale === "zh-CN"
                 ? `已选 ${selectedOptions.length} 个`
                 : `${selectedOptions.length} selected`}
             </span>
-            <button
-              type="button"
-              className="text-foreground hover:underline"
-              onClick={() => onChange([])}
-            >
-              {locale === "zh-CN" ? "清空" : "Clear"}
-            </button>
+            <span className="flex items-center gap-3">
+              <button
+                type="button"
+                className="text-foreground hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline"
+                disabled={allFilteredSelected}
+                onClick={selectAllFiltered}
+              >
+                {locale === "zh-CN" ? "全选" : "Select all"}
+              </button>
+              {selectedOptions.length ? (
+                <button
+                  type="button"
+                  className="text-foreground hover:underline"
+                  onClick={() => onChange([])}
+                >
+                  {locale === "zh-CN" ? "清空" : "Clear"}
+                </button>
+              ) : null}
+            </span>
           </div>
         ) : null}
       </PopoverContent>

@@ -1,5 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { ListPlus, Plus, RefreshCcw, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  ListPlus,
+  Plus,
+  RefreshCcw,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/Badge";
@@ -49,6 +56,10 @@ const CLEARED_RATE_STATUS = {
   rate_last_error: "",
 };
 
+// Long key lists (typical after a batch add) stay collapsed so the editor
+// dialog does not grow into a page of its own.
+const COLLAPSED_CREDENTIAL_LIMIT = 5;
+
 /** Renders editable channel credentials. */
 export function ChannelCredentialSection({
   baseUrls,
@@ -68,6 +79,12 @@ export function ChannelCredentialSection({
     null,
   );
   const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false);
+  const [isListExpanded, setIsListExpanded] = useState(false);
+  const isCollapsible = credentials.length > COLLAPSED_CREDENTIAL_LIMIT;
+  const visibleCredentials =
+    isCollapsible && !isListExpanded
+      ? credentials.slice(0, COLLAPSED_CREDENTIAL_LIMIT)
+      : credentials;
 
   function addCredentialBatch(drafts: CredentialBatchDraft[]) {
     onAddMany(
@@ -139,7 +156,11 @@ export function ChannelCredentialSection({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => onAdd(emptyCredential())}
+            onClick={() => {
+              // A single add targets the list end; expand so it stays visible.
+              setIsListExpanded(true);
+              onAdd(emptyCredential());
+            }}
           >
             <Plus data-icon="inline-start" />
             {locale === "zh-CN" ? "添加" : "Add"}
@@ -147,7 +168,7 @@ export function ChannelCredentialSection({
         </div>
       </div>
       <FieldGroup className="gap-3">
-        {credentials.map((credential, index) => {
+        {visibleCredentials.map((credential, index) => {
           const availableProtocolConfigs = protocolConfigs.filter(
             (config) =>
               config.enabled &&
@@ -357,6 +378,28 @@ export function ChannelCredentialSection({
           );
         })}
       </FieldGroup>
+      {isCollapsible ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="justify-self-start text-muted-foreground"
+          onClick={() => setIsListExpanded((current) => !current)}
+        >
+          {isListExpanded ? (
+            <ChevronUp data-icon="inline-start" />
+          ) : (
+            <ChevronDown data-icon="inline-start" />
+          )}
+          {isListExpanded
+            ? locale === "zh-CN"
+              ? "收起"
+              : "Show less"
+            : locale === "zh-CN"
+              ? `展开全部（共 ${credentials.length} 个）`
+              : `Show all (${credentials.length})`}
+        </Button>
+      ) : null}
       <BatchCredentialDialog
         open={isBatchDialogOpen}
         locale={locale}
