@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Iterable
 from typing import Any, Literal
 from uuid import uuid4
@@ -236,10 +237,7 @@ async def fetch_site_models(
 ) -> list[SiteModelFetchItem]:
     """Discover models available through the supplied site credentials."""
     previews = await app_state.channel_store.fetch_models_preview(payload)
-    items: list[SiteModelFetchItem] = []
-    seen: set[tuple[str, str]] = set()
-    errors: list[str] = []
-
+    prepared: list[tuple[dict[str, str], ChannelConfig]] = []
     for preview in previews:
         credential = next(
             (
@@ -273,15 +271,32 @@ async def fetch_site_models(
             channel_proxy=payload.channel_proxy,
             param_override=[],
         )
-        try:
-            model_names = filter_model_names(
-                await _fetch_upstream_models(channel), payload.match_regex
-            )
-        except HTTPException as exc:
-            errors.append(_format_channel_error(exc.detail))
-            continue
+        prepared.append((preview, channel))
 
-        for model_name in model_names:
+    # Many-key channels need parallel discovery or a long key list would run
+    # one upstream request at a time; bound the fan-out to stay polite.
+    semaphore = asyncio.Semaphore(8)
+
+    async def discover_models(channel: ChannelConfig) -> list[str] | str:
+        async with semaphore:
+            try:
+                return filter_model_names(
+                    await _fetch_upstream_models(channel), payload.match_regex
+                )
+            except HTTPException as exc:
+                return _format_channel_error(exc.detail)
+
+    results = await asyncio.gather(
+        *(discover_models(channel) for _, channel in prepared)
+    )
+    items: list[SiteModelFetchItem] = []
+    seen: set[tuple[str, str]] = set()
+    errors: list[str] = []
+    for (preview, _), result in zip(prepared, results, strict=True):
+        if isinstance(result, str):
+            errors.append(result)
+            continue
+        for model_name in result:
             key = (preview["credential_id"], model_name)
             if key in seen:
                 continue

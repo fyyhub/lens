@@ -17,8 +17,8 @@ class SiteModelFetchRequest(StrictBaseModel):
     proxy_mode: ChannelProxyMode = ChannelProxyMode.INHERIT
     channel_proxy: str = ""
     match_regex: str = ""
-    credentials: list[SiteCredentialInput] = Field(default_factory=list, max_length=20)
-    credential_ids: list[str] = Field(default_factory=list, max_length=20)
+    credentials: list[SiteCredentialInput] = Field(default_factory=list, max_length=200)
+    credential_ids: list[str] = Field(default_factory=list, max_length=200)
 
     _canonicalize_base_url = field_validator("base_url", mode="before")(
         canonicalize_base_url
