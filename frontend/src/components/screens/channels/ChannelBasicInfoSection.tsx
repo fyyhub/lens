@@ -247,6 +247,12 @@ export function ChannelBasicInfoSection({
                 credentials: [...current.credentials, credential],
               }))
             }
+            onAddMany={(newCredentials) =>
+              setForm((current) => ({
+                ...current,
+                credentials: [...current.credentials, ...newCredentials],
+              }))
+            }
             onUpdate={updateCredential}
             onRemove={removeCredential}
           />

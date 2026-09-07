@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, RefreshCcw, X } from "lucide-react";
+import { ListPlus, Plus, RefreshCcw, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/Badge";
@@ -17,6 +17,7 @@ import {
 import { Switch } from "@/components/ui/Switch";
 import { apiRequest, getApiErrorMessage } from "@/lib/api/client";
 import type { SiteCredential } from "@/lib/api/sites";
+import { BatchCredentialDialog } from "./BatchCredentialDialog";
 import { emptyCredential } from "./channelDefaults";
 import { credentialIndexLabel } from "./channelLabels";
 import type {
@@ -25,6 +26,7 @@ import type {
   FormProtocolConfig,
   Locale,
 } from "./channelTypes";
+import type { CredentialBatchDraft } from "./credentialBatchParse";
 
 type Props = {
   baseUrls: FormBaseUrl[];
@@ -35,6 +37,7 @@ type Props = {
   locale: Locale;
   onSyncingChange: (isSyncing: boolean) => void;
   onAdd: (credential: FormCredential) => void;
+  onAddMany: (credentials: FormCredential[]) => void;
   onUpdate: (credentialId: string, patch: Partial<FormCredential>) => void;
   onRemove: (index: number) => void;
 };
@@ -56,6 +59,7 @@ export function ChannelCredentialSection({
   locale,
   onSyncingChange,
   onAdd,
+  onAddMany,
   onUpdate,
   onRemove,
 }: Props) {
@@ -63,6 +67,22 @@ export function ChannelCredentialSection({
   const [syncingCredentialId, setSyncingCredentialId] = useState<string | null>(
     null,
   );
+  const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false);
+
+  function addCredentialBatch(drafts: CredentialBatchDraft[]) {
+    onAddMany(
+      drafts.map((draft) => ({
+        ...emptyCredential(),
+        name: draft.name,
+        api_key: draft.apiKey,
+      })),
+    );
+    toast.success(
+      locale === "zh-CN"
+        ? `已添加 ${drafts.length} 个密钥`
+        : `Added ${drafts.length} ${drafts.length === 1 ? "key" : "keys"}`,
+    );
+  }
 
   async function syncRate(credential: FormCredential) {
     if (!siteId) return;
@@ -105,15 +125,26 @@ export function ChannelCredentialSection({
         <div className="text-sm font-medium text-foreground">
           {locale === "zh-CN" ? "密钥" : "API Keys"}
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => onAdd(emptyCredential())}
-        >
-          <Plus data-icon="inline-start" />
-          {locale === "zh-CN" ? "添加" : "Add"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsBatchDialogOpen(true)}
+          >
+            <ListPlus data-icon="inline-start" />
+            {locale === "zh-CN" ? "批量添加" : "Batch add"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onAdd(emptyCredential())}
+          >
+            <Plus data-icon="inline-start" />
+            {locale === "zh-CN" ? "添加" : "Add"}
+          </Button>
+        </div>
       </div>
       <FieldGroup className="gap-3">
         {credentials.map((credential, index) => {
@@ -326,6 +357,13 @@ export function ChannelCredentialSection({
           );
         })}
       </FieldGroup>
+      <BatchCredentialDialog
+        open={isBatchDialogOpen}
+        locale={locale}
+        existingApiKeys={credentials.map((credential) => credential.api_key)}
+        onOpenChange={setIsBatchDialogOpen}
+        onConfirm={addCredentialBatch}
+      />
     </section>
   );
 }
