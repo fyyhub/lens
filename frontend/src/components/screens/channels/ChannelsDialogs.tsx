@@ -103,6 +103,7 @@ export function ChannelsDialogs({
           updateBaseUrl={editor.updateBaseUrl}
           removeBaseUrl={editor.removeBaseUrl}
           updateCredential={editor.updateCredential}
+          addCredentials={editor.addCredentials}
           removeCredential={editor.removeCredential}
           addProtocolConfig={editor.addProtocolConfig}
           updateProtocolConfig={editor.updateProtocolConfig}

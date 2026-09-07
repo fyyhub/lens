@@ -46,6 +46,7 @@ type ChannelEditorDialogProps = {
   addBaseUrl: () => void;
   updateBaseUrl: (index: number, patch: Partial<FormBaseUrl>) => void;
   removeBaseUrl: (index: number) => void;
+  addCredentials: (credentials: FormCredential[]) => void;
   updateCredential: (
     credentialId: string,
     patch: Partial<FormCredential>,
@@ -98,6 +99,7 @@ export function ChannelEditorDialog({
   addBaseUrl,
   updateBaseUrl,
   removeBaseUrl,
+  addCredentials,
   updateCredential,
   removeCredential,
   addProtocolConfig,
@@ -176,6 +178,7 @@ export function ChannelEditorDialog({
                 updateBaseUrl={updateBaseUrl}
                 removeBaseUrl={removeBaseUrl}
                 updateCredential={updateCredential}
+                addCredentials={addCredentials}
                 removeCredential={removeCredential}
               />
               <Separator />

@@ -94,10 +94,22 @@ export function ChannelCredentialSection({
         api_key: draft.apiKey,
       })),
     );
+    const keyLabel =
+      drafts.length === 1
+        ? locale === "zh-CN"
+          ? "1 个密钥"
+          : "1 key"
+        : locale === "zh-CN"
+          ? `${drafts.length} 个密钥`
+          : `${drafts.length} keys`;
     toast.success(
-      locale === "zh-CN"
-        ? `已添加 ${drafts.length} 个密钥`
-        : `Added ${drafts.length} ${drafts.length === 1 ? "key" : "keys"}`,
+      protocolConfigs.length
+        ? locale === "zh-CN"
+          ? `已添加 ${keyLabel}，并已应用到协议配置的现有模型`
+          : `Added ${keyLabel} and applied them to existing protocol-config models`
+        : locale === "zh-CN"
+          ? `已添加 ${keyLabel}`
+          : `Added ${keyLabel}`,
     );
   }
 

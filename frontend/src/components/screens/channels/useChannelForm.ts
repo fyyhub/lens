@@ -21,12 +21,15 @@ import {
   duplicateProtocolConfigKeys,
   invalidModelProtocolCount,
   invalidProtocolBaseUrlCount,
+  protocolConfigCredentialKeys,
 } from "./channelFormValidationUtils";
 import { nextProtocolConfigName } from "./channelLabels";
 import {
   aggregateModelGroupKey,
   coalesceFormModels,
+  genericModelKey,
   isAggregateModelGroupKey,
+  protocolConfigEffectiveProtocols,
   protocolConfigModelKey,
   syncTargetKey,
 } from "./channelModelUtils";
@@ -111,6 +114,87 @@ function validateChannelForm(
     return false;
   }
   return true;
+}
+
+/**
+ * Appends credentials and links them into every compatible protocol config,
+ * cloning the config's model rows and sync targets onto each new credential so
+ * batch-added keys serve the same models without re-running discovery.
+ */
+function applyNewCredentials(
+  form: FormState,
+  newCredentials: FormCredential[],
+): FormState {
+  if (!newCredentials.length) return form;
+  const baseUrlIds = new Set(
+    formBaseUrlsForPayload(form).map((item) => item.id),
+  );
+  const claimedKeys = new Set<string>();
+  for (const config of form.protocolConfigs) {
+    for (const key of protocolConfigCredentialKeys(config, baseUrlIds)) {
+      claimedKeys.add(key);
+    }
+  }
+
+  const protocolConfigs = form.protocolConfigs.map((config) => {
+    const selectedIds = protocolConfigSelectedCredentialIds(config);
+    const protocols = protocolConfigEffectiveProtocols(config);
+    if (!selectedIds.length || !protocols.length) return config;
+    const keyFor = (credentialId: string, protocol: ProtocolKind) =>
+      JSON.stringify([config.base_url_id, credentialId, protocol]);
+    // Skip credentials that would duplicate another config's base URL +
+    // credential + protocol combination.
+    const applicableIds = newCredentials
+      .map((credential) => credential.id)
+      .filter(
+        (credentialId) =>
+          !protocols.some((protocol) =>
+            claimedKeys.has(keyFor(credentialId, protocol)),
+          ),
+      );
+    if (!applicableIds.length) return config;
+    for (const credentialId of applicableIds) {
+      for (const protocol of protocols) {
+        claimedKeys.add(keyFor(credentialId, protocol));
+      }
+    }
+    const modelKeys = new Set(config.models.map(genericModelKey));
+    const clonedModels = config.models.flatMap((model) =>
+      applicableIds
+        .filter(
+          (credentialId) =>
+            !modelKeys.has(
+              genericModelKey({
+                credential_id: credentialId,
+                model_name: model.model_name,
+              }),
+            ),
+        )
+        .map((credentialId) => ({
+          ...model,
+          protocolIds: {},
+          credential_id: credentialId,
+        })),
+    );
+    const targetKeys = new Set(config.sync_targets.map(syncTargetKey));
+    const clonedTargets = config.sync_targets.flatMap((target) =>
+      applicableIds
+        .map((credentialId) => ({ ...target, credential_id: credentialId }))
+        .filter((candidate) => !targetKeys.has(syncTargetKey(candidate))),
+    );
+    return {
+      ...config,
+      credential_ids: [...selectedIds, ...applicableIds],
+      models: [...config.models, ...clonedModels],
+      sync_targets: [...config.sync_targets, ...clonedTargets],
+    };
+  });
+
+  return {
+    ...form,
+    credentials: [...form.credentials, ...newCredentials],
+    protocolConfigs,
+  };
 }
 
 /** Protects unsaved edits and focuses a newly added protocol configuration. */
@@ -257,6 +341,9 @@ export function useChannelForm(locale: Locale) {
         }),
       };
     });
+  }
+  function addCredentials(newCredentials: FormCredential[]) {
+    setForm((current) => applyNewCredentials(current, newCredentials));
   }
   function updateProtocolConfig(
     index: number,
@@ -485,6 +572,7 @@ export function useChannelForm(locale: Locale) {
     hasUnsavedChanges,
     duplicatedProtocolConfigKeys,
     updateCredential,
+    addCredentials,
     removeCredential,
     updateProtocolConfig,
     updateModelProtocols,

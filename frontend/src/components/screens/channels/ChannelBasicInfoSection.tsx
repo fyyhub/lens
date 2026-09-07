@@ -37,6 +37,7 @@ type Props = {
   addBaseUrl: () => void;
   updateBaseUrl: (index: number, patch: Partial<FormBaseUrl>) => void;
   removeBaseUrl: (index: number) => void;
+  addCredentials: (credentials: FormCredential[]) => void;
   updateCredential: (
     credentialId: string,
     patch: Partial<FormCredential>,
@@ -56,6 +57,7 @@ export function ChannelBasicInfoSection({
   addBaseUrl,
   updateBaseUrl,
   removeBaseUrl,
+  addCredentials,
   updateCredential,
   removeCredential,
 }: Props) {
@@ -247,12 +249,7 @@ export function ChannelBasicInfoSection({
                 credentials: [...current.credentials, credential],
               }))
             }
-            onAddMany={(newCredentials) =>
-              setForm((current) => ({
-                ...current,
-                credentials: [...current.credentials, ...newCredentials],
-              }))
-            }
+            onAddMany={addCredentials}
             onUpdate={updateCredential}
             onRemove={removeCredential}
           />
