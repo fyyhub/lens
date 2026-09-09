@@ -68,6 +68,8 @@ def _model_matches_sync_filter(
         return bool(regex.search(model_name))
     if mode == ModelGroupSyncFilterMode.CONTAINS:
         return trimmed_query.lower() in model_name.lower()
+    if mode == ModelGroupSyncFilterMode.EQUALS:
+        return trimmed_query.casefold() == model_name.casefold()
     return False
 
 

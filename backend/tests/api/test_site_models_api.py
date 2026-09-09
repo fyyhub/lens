@@ -687,6 +687,53 @@ def test_channel_model_sync_reports_applied_group_changes(
     }
 
 
+def test_channel_model_sync_applies_exact_model_group_filter(
+    client,
+    admin_headers,
+    monkeypatch,
+) -> None:
+    create_response = client.post(
+        "/api/admin/sites",
+        headers=admin_headers,
+        json=_auto_sync_site_payload(seed_synced=True),
+    )
+    assert create_response.status_code == 201, create_response.text
+    group_response = client.post(
+        "/api/admin/model-groups",
+        headers=admin_headers,
+        json={
+            "name": "exact gpt model",
+            "sync_filter_mode": "equals",
+            "sync_filter_query": "gpt-cred-b",
+        },
+    )
+    assert group_response.status_code == 201, group_response.text
+
+    async def fake_fetch(channel: Any, *, apply_match_regex: bool = True) -> list[str]:
+        return (
+            ["gpt-cred-b", "gpt-cred-b-mini"]
+            if channel.keys[0].id == "cred-b"
+            else ["gpt-cred-a"]
+        )
+
+    import app.gateway.service.tasks.model_sync as model_sync
+
+    monkeypatch.setattr(model_sync, "_fetch_upstream_models", fake_fetch)
+    response = client.post(
+        "/api/admin/channel-model-sync",
+        headers=admin_headers,
+        json={"dry_run": False},
+    )
+
+    assert response.status_code == 200, response.text
+    group = next(
+        item
+        for item in client.get("/api/admin/model-groups", headers=admin_headers).json()
+        if item["name"] == "exact gpt model"
+    )
+    assert {item["model_name"] for item in group["items"]} == {"gpt-cred-b"}
+
+
 @pytest.mark.parametrize(
     "disabled_resource", ["site", "base_url", "config", "credential"]
 )

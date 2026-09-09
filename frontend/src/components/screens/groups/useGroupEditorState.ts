@@ -23,7 +23,7 @@ export function useGroupEditorState() {
     useState<MemberStatusFilter>("all");
 
   const candidateSearch =
-    candidateSearchMode === "contains" && candidateSearchUsesGroupName
+    candidateSearchMode !== "regex" && candidateSearchUsesGroupName
       ? form.name
       : candidateSearchValue;
 
@@ -57,7 +57,11 @@ export function useGroupEditorState() {
       hasSavedFilter ? group.sync_filter_query : group.name,
     );
     setCandidateSearchMode(
-      group.sync_filter_mode === "regex" ? "regex" : "contains",
+      group.sync_filter_mode === "regex"
+        ? "regex"
+        : group.sync_filter_mode === "equals"
+          ? "equals"
+          : "contains",
     );
     setCandidateSearchUsesGroupName(
       !hasSavedFilter && group.sync_filter_mode !== "regex",
@@ -67,7 +71,7 @@ export function useGroupEditorState() {
 
   function changeCandidateSearchMode(mode: CandidateSearchMode) {
     setCandidateSearchMode(mode);
-    if (mode === "contains") {
+    if (mode !== "regex") {
       setCandidateSearchValue(form.name);
       setCandidateSearchUsesGroupName(true);
       return;

@@ -59,6 +59,9 @@ export function ModelGroupCandidateToolbar({
               <SelectItem value="contains">
                 {locale === "zh-CN" ? "包含" : "Contains"}
               </SelectItem>
+              <SelectItem value="equals">
+                {locale === "zh-CN" ? "等于" : "Equals"}
+              </SelectItem>
               <SelectItem value="regex">
                 {locale === "zh-CN" ? "正则" : "Regex"}
               </SelectItem>
@@ -75,9 +78,13 @@ export function ModelGroupCandidateToolbar({
                   ? locale === "zh-CN"
                     ? "输入正则表达式"
                     : "Enter regular expression"
-                  : locale === "zh-CN"
-                    ? "输入包含条件"
-                    : "Enter contains filter"
+                  : candidateSearchMode === "equals"
+                    ? locale === "zh-CN"
+                      ? "输入完整模型名"
+                      : "Enter exact model name"
+                    : locale === "zh-CN"
+                      ? "输入包含条件"
+                      : "Enter contains filter"
               }
             />
           </div>
@@ -132,9 +139,13 @@ export function ModelGroupCandidateToolbar({
                 ? locale === "zh-CN"
                   ? "正则"
                   : "Regex"
-                : locale === "zh-CN"
-                  ? "包含"
-                  : "Contains"}
+                : form.sync_filter_mode === "equals"
+                  ? locale === "zh-CN"
+                    ? "等于"
+                    : "Equals"
+                  : locale === "zh-CN"
+                    ? "包含"
+                    : "Contains"}
             </span>
             <span className="mx-2">·</span>
             <span className="break-all">{form.sync_filter_query}</span>

@@ -51,6 +51,9 @@ export function matchesCandidateSearch(
     }
     return regex.test(item.model_name);
   }
+  if (mode === "equals") {
+    return item.model_name.toLowerCase() === trimmedQuery.toLowerCase();
+  }
   return candidateSearchText(item, locale)
     .toLowerCase()
     .includes(trimmedQuery.toLowerCase());
