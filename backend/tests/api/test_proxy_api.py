@@ -110,6 +110,30 @@ async def _set_gateway_spend(app_state: Any, key_id: str, spent: float) -> None:
             },
         ),
         (
+            "/v1/images/generations",
+            {"model": "gpt-image-1", "prompt": "test"},
+            {
+                "error": {
+                    "message": "Missing gateway API key",
+                    "type": "unauthorized",
+                    "param": None,
+                    "code": None,
+                }
+            },
+        ),
+        (
+            "/v1/images/edits",
+            {},
+            {
+                "error": {
+                    "message": "Missing gateway API key",
+                    "type": "unauthorized",
+                    "param": None,
+                    "code": None,
+                }
+            },
+        ),
+        (
             "/v1/messages",
             {"model": "claude-3"},
             {
@@ -958,6 +982,54 @@ def test_upstream_400_stream_passes_through_body(
     assert "缺少 text 字段" in response.json()["error"]["message"]
 
 
+def test_openai_chat_stream_error_frame_terminates_response(
+    client,
+    monkeypatch,
+    create_site,
+    create_model_group,
+    create_gateway_key,
+) -> None:
+    import app.gateway.service.proxy_upstream as proxy_upstream
+
+    create_site(valid_site_payload(model_name="stream-model"))
+    create_model_group(
+        name="stream-model",
+        items=[_protocol_group_item("openai_chat", "stream-model")],
+    )
+    stream_body = (
+        b'data: {"error":{"message":"quota exceeded",'
+        b'"type":"rate_limit_error"}}\n\n'
+        b'data: {"choices":[{"delta":{"content":"should not pass"}}]}\n\n'
+    )
+
+    async def fake_send_upstream(
+        _client: httpx.AsyncClient,
+        upstream: Any,
+        *,
+        stream: bool,
+        body_bytes: bytes,
+    ) -> httpx.Response:
+        assert stream
+        return httpx.Response(
+            200,
+            content=stream_body,
+            headers={"content-type": "text/event-stream"},
+            request=httpx.Request("POST", upstream.url),
+        )
+
+    monkeypatch.setattr(proxy_upstream, "_send_upstream", fake_send_upstream)
+    key = create_gateway_key()
+
+    response = client.post(
+        "/v1/chat/completions",
+        headers=gateway_headers(key),
+        json={"model": "stream-model", "messages": [], "stream": True},
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.text == stream_body.split(b"\n\ndata:", 1)[0].decode() + "\n\n"
+
+
 def test_all_upstream_fail_returns_first_specific_message(
     client,
     admin_headers,
@@ -1061,9 +1133,23 @@ def test_all_channels_in_cooldown_logs_the_cooled_channel_names(
     assert response.status_code == 503, response.text
     page = client.get("/api/admin/request-logs/page", headers=admin_headers)
     assert page.status_code == 200, page.text
-    error_message = page.json()["items"][0]["error_message"]
-    assert "First/m-a (rate_limit," in error_message
-    assert "Second/m-b (rate_limit," in error_message
+    item = page.json()["items"][0]
+    assert item["error_message"] == "All 2 matching channels are in cooldown"
+    assert item["attempt_count"] == 2
+
+    detail_response = client.get(
+        f"/api/admin/request-logs/{item['id']}",
+        headers=admin_headers,
+    )
+    assert detail_response.status_code == 200, detail_response.text
+    attempts = detail_response.json()["attempts"]
+    assert [attempt["channel_name"] for attempt in attempts] == [
+        "First",
+        "Second",
+    ]
+    assert [attempt["status_code"] for attempt in attempts] == [503, 503]
+    assert [attempt["success"] for attempt in attempts] == [False, False]
+    assert all("rate_limit" in attempt["error_message"] for attempt in attempts)
 
 
 def _anthropic_group(
