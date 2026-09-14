@@ -256,7 +256,7 @@ def test_proxy_json_endpoints_forward_expected_protocol_and_body(
 
     import app.gateway.service.proxy_routes as proxy_routes
 
-    monkeypatch.setattr(proxy_routes, "_proxy_protocol", fake_proxy)
+    monkeypatch.setattr(proxy_routes, "proxy_protocol", fake_proxy)
     headers = {**gateway_headers(key), "User-Agent": "lens-tests"}
 
     cases = [
@@ -403,7 +403,11 @@ def test_responses_proxy_preserves_input_shape(
         },
     ]
     request_bodies = [
-        {"model": "response-model", "input": "  Keep surrounding whitespace.  "},
+        {
+            "model": "response-model",
+            "input": "  Keep surrounding whitespace.  ",
+            "prompt_cache_options": {"mode": "explicit"},
+        },
         {"model": "response-model", "input": input_items},
     ]
 
@@ -416,7 +420,12 @@ def test_responses_proxy_preserves_input_shape(
         assert response.status_code == 200, response.text
 
     assert captured_bodies == [
-        {"model": "gpt-5.6-sol", "input": body["input"]} for body in request_bodies
+        {
+            "model": "gpt-5.6-sol",
+            "input": "  Keep surrounding whitespace.  ",
+            "prompt_cache_options": {"mode": "explicit"},
+        },
+        {"model": "gpt-5.6-sol", "input": input_items},
     ]
 
 
@@ -566,7 +575,7 @@ def test_image_proxy_logs_non_token_billing(
     create_gateway_key,
 ) -> None:
     import app.gateway.service.proxy_upstream as proxy_upstream
-    import app.gateway.service.streaming.stream_logging as stream_logging
+    import app.gateway.service.streaming.logging as stream_logging
 
     async def fake_send_upstream(
         _client: httpx.AsyncClient,

@@ -36,9 +36,9 @@ from ....models.sites import (
 )
 from ..app_state import app_state
 from ..auth import get_current_admin
-from ..tasks.model_discovery import _fetch_upstream_models, filter_model_names
+from ..tasks.model_discovery import fetch_upstream_models, filter_model_names
 from ..tasks.site_model_probe import run_site_model_probe
-from ..upstream_support import _format_channel_error
+from ..upstream_support import format_channel_error
 
 
 async def list_sites(
@@ -281,10 +281,10 @@ async def fetch_site_models(
         async with semaphore:
             try:
                 return filter_model_names(
-                    await _fetch_upstream_models(channel), payload.match_regex
+                    await fetch_upstream_models(channel), payload.match_regex
                 )
             except HTTPException as exc:
-                return _format_channel_error(exc.detail)
+                return format_channel_error(exc.detail)
 
     results = await asyncio.gather(
         *(discover_models(channel) for _, channel in prepared)

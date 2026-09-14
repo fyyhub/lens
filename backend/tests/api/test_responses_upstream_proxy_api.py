@@ -86,10 +86,10 @@ def _stub_upstream(
 
 def _enable_body_logging(monkeypatch: Any, app_state: Any) -> None:
     import app.gateway.service.proxy_upstream as proxy_upstream
-    import app.gateway.service.streaming.stream_logging as stream_logging
+    import app.gateway.service.streaming.logging as stream_logging
 
-    monkeypatch.setattr(proxy_upstream, "_safe_estimate_cost", _no_cost)
-    monkeypatch.setattr(stream_logging, "_safe_estimate_cost", _no_cost)
+    monkeypatch.setattr(proxy_upstream, "safe_estimate_cost", _no_cost)
+    monkeypatch.setattr(stream_logging, "safe_estimate_cost", _no_cost)
     monkeypatch.setattr(stream_logging, "app_state", app_state)
     run_async(
         app_state.settings_repo.upsert_settings(
@@ -137,6 +137,10 @@ def _completed_frames() -> list[dict[str, Any]]:
                     "input_tokens": 5,
                     "output_tokens": 2,
                     "total_tokens": 7,
+                    "input_tokens_details": {
+                        "cached_tokens": 2,
+                        "cache_write_tokens": 2,
+                    },
                 },
             },
         },
@@ -168,7 +172,15 @@ def test_chat_proxy_uses_responses_channel_and_converts_response(
                     "content": [{"type": "output_text", "text": "Hello"}],
                 }
             ],
-            "usage": {"input_tokens": 3, "output_tokens": 1, "total_tokens": 4},
+            "usage": {
+                "input_tokens": 3,
+                "output_tokens": 1,
+                "total_tokens": 4,
+                "input_tokens_details": {
+                    "cached_tokens": 1,
+                    "cache_write_tokens": 1,
+                },
+            },
         },
     )
     monkeypatch.setattr(app_state.model_price_repo, "estimate_model_cost", _no_cost)
@@ -204,6 +216,7 @@ def test_chat_proxy_uses_responses_channel_and_converts_response(
         "prompt_tokens": 3,
         "completion_tokens": 1,
         "total_tokens": 4,
+        "prompt_tokens_details": {"cached_tokens": 1, "cache_write_tokens": 1},
     }
 
 
@@ -299,6 +312,7 @@ def test_streaming_chat_proxy_converts_responses_stream_and_logs_upstream_usage(
             "messages": [{"role": "user", "content": "Hello"}],
             "stream": True,
             "stream_options": {"include_usage": True},
+            "prompt_cache_options": {"mode": "implicit"},
             "n": 4,
         },
     )
@@ -310,6 +324,7 @@ def test_streaming_chat_proxy_converts_responses_stream_and_logs_upstream_usage(
             "model": "responses-model",
             "input": [{"role": "user", "content": "Hello"}],
             "stream": True,
+            "prompt_cache_options": {"mode": "implicit"},
         },
     }
     assert '"finish_reason": "stop"' in response.text
@@ -322,6 +337,8 @@ def test_streaming_chat_proxy_converts_responses_stream_and_logs_upstream_usage(
     assert request_log.input_tokens == 5
     assert request_log.output_tokens == 2
     assert request_log.total_tokens == 7
+    assert request_log.cache_read_input_tokens == 2
+    assert request_log.cache_write_input_tokens == 2
     assert json.loads(request_log.request_content or "null") == captured["body"]
     logged_chunks = json.loads(request_log.response_content or "null")
     assert isinstance(logged_chunks, list)
@@ -369,7 +386,11 @@ def test_streaming_anthropic_proxy_converts_responses_stream_and_logs_usage(
     assert captured["url"] == "https://upstream.example/v1/responses"
     assert captured["body"]["stream"] is True
     assert '"type": "text_delta", "text": "Hello"' in response.text
-    assert '"input_tokens": 5, "output_tokens": 2' in response.text
+    assert (
+        '"usage": {"input_tokens": 1, "output_tokens": 2, '
+        '"cache_creation_input_tokens": 2, "cache_read_input_tokens": 2}'
+        in response.text
+    )
     assert response.text.endswith(
         'event: message_stop\ndata: {"type": "message_stop"}\n\n'
     )
@@ -379,4 +400,6 @@ def test_streaming_anthropic_proxy_converts_responses_stream_and_logs_usage(
     assert request_log.input_tokens == 5
     assert request_log.output_tokens == 2
     assert request_log.total_tokens == 7
+    assert request_log.cache_read_input_tokens == 2
+    assert request_log.cache_write_input_tokens == 2
     assert "response.output_text.delta" not in (request_log.response_content or "")

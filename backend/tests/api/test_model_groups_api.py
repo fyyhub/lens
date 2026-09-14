@@ -88,7 +88,7 @@ def test_model_group_model_test_uses_persisted_image_credential(
     import app.gateway.service.tasks.site_model_probe as probe
 
     monkeypatch.setattr(probe, "app_state", app_state)
-    monkeypatch.setattr(probe, "_resolve_http_client", lambda _proxy: upstream_client)
+    monkeypatch.setattr(probe, "resolve_http_client", lambda _proxy: upstream_client)
     request_payload = {
         "channel_id": channel_id,
         "credential_id": "cred-1",
@@ -188,6 +188,17 @@ def test_model_group_crud_round_trip(client, admin_headers, create_model_group) 
     )
     assert delete.status_code == 204
     assert client.get("/api/admin/model-groups", headers=admin_headers).json() == []
+
+
+def test_model_group_defaults_to_failover(client, admin_headers) -> None:
+    response = client.post(
+        "/api/admin/model-groups",
+        headers=admin_headers,
+        json={"name": "default-failover-group", "items": []},
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["strategy"] == "failover"
 
 
 def test_model_group_fallback_groups_round_trip(

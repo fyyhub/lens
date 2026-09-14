@@ -3,36 +3,32 @@ import { toast } from "sonner";
 import type { ProtocolKind } from "@/lib/api/protocols";
 import type { Site } from "@/lib/api/sites";
 import {
-  createLocalId,
-  emptyForm,
-  emptyProtocolConfig,
-} from "./channelDefaults";
+  defaultBaseUrlId,
+  protocolConfigSelectedCredentialIds,
+  resolveBaseUrlId,
+} from "./channelForm";
 import {
   formBaseUrlsForPayload,
   toForm,
   toPayload,
 } from "./channelFormConversion";
 import {
-  defaultBaseUrlId,
-  protocolConfigSelectedCredentialIds,
-  resolveBaseUrlId,
-} from "./channelFormUtils";
-import {
-  duplicateProtocolConfigKeys,
-  invalidModelProtocolCount,
-  invalidProtocolBaseUrlCount,
-  protocolConfigCredentialKeys,
-} from "./channelFormValidationUtils";
-import { nextProtocolConfigName } from "./channelLabels";
-import {
   aggregateModelGroupKey,
   coalesceFormModels,
+  createLocalId,
+  duplicateProtocolConfigKeys,
+  emptyForm,
+  emptyProtocolConfig,
   genericModelKey,
+  invalidModelProtocolCount,
+  invalidProtocolBaseUrlCount,
   isAggregateModelGroupKey,
+  nextProtocolConfigName,
+  protocolConfigCredentialKeys,
   protocolConfigEffectiveProtocols,
   protocolConfigModelKey,
   syncTargetKey,
-} from "./channelModelUtils";
+} from "./channelModels";
 import type {
   FormBaseUrl,
   FormCredential,

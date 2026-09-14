@@ -25,8 +25,7 @@ import { Switch } from "@/components/ui/Switch";
 import { apiRequest, getApiErrorMessage } from "@/lib/api/client";
 import type { SiteCredential } from "@/lib/api/sites";
 import { BatchCredentialDialog } from "./BatchCredentialDialog";
-import { emptyCredential } from "./channelDefaults";
-import { credentialIndexLabel } from "./channelLabels";
+import { credentialIndexLabel, emptyCredential } from "./channelModels";
 import type {
   FormBaseUrl,
   FormCredential,
