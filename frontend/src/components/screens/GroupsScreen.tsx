@@ -53,7 +53,7 @@ function useGroupEditorState() {
   const [memberStatusFilter, setMemberStatusFilter] =
     useState<MemberStatusFilter>("all");
   const candidateSearch =
-    candidateSearchMode === "contains" && candidateSearchUsesGroupName
+    candidateSearchMode !== "regex" && candidateSearchUsesGroupName
       ? form.name
       : candidateSearchValue;
   const setDialogOpen: Dispatch<SetStateAction<boolean>> = (value) => {
@@ -82,7 +82,11 @@ function useGroupEditorState() {
     setForm(modelGroupToForm(group));
     setCandidateSearchValue(saved ? group.sync_filter_query : group.name);
     setCandidateSearchMode(
-      group.sync_filter_mode === "regex" ? "regex" : "contains",
+      group.sync_filter_mode === "regex"
+        ? "regex"
+        : group.sync_filter_mode === "equals"
+          ? "equals"
+          : "contains",
     );
     setCandidateSearchUsesGroupName(
       !saved && group.sync_filter_mode !== "regex",
@@ -91,7 +95,7 @@ function useGroupEditorState() {
   }
   function changeCandidateSearchMode(mode: CandidateSearchMode) {
     setCandidateSearchMode(mode);
-    if (mode === "contains") {
+    if (mode !== "regex") {
       setCandidateSearchValue(form.name);
       setCandidateSearchUsesGroupName(true);
     } else setCandidateSearchUsesGroupName(false);
