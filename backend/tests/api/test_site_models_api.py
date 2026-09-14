@@ -718,7 +718,7 @@ def test_channel_model_sync_applies_exact_model_group_filter(
 
     import app.gateway.service.tasks.model_sync as model_sync
 
-    monkeypatch.setattr(model_sync, "_fetch_upstream_models", fake_fetch)
+    monkeypatch.setattr(model_sync, "fetch_upstream_models", fake_fetch)
     response = client.post(
         "/api/admin/channel-model-sync",
         headers=admin_headers,
