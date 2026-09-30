@@ -236,6 +236,10 @@ async def check_version(_: Any = Depends(get_current_admin)) -> VersionCheckResu
     latest_url = settings_dict.get(SETTING_LATEST_VERSION_URL, "")
     checked_at = settings_dict.get(SETTING_VERSION_CHECK_AT, "")
 
+    if "dyedd/lens" in latest_url:
+        latest_version = ""
+        latest_url = ""
+
     has_update = _has_version_update(latest_version, current_version)
 
     return VersionCheckResult(

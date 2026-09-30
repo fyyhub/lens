@@ -94,7 +94,7 @@
         ▼              ▼              ▼              ▼
    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────────┐
    │ OpenAI  │    │Anthropic│    │ Gemini  │    │ 兼容服务 │
-   └─────────┘    └─────────┘    └─────────┘    └──────────┘
+   └─────────┘    └���────────┘    └─────────┘    └──────────┘
 ```
 
 ## 功能
@@ -134,7 +134,7 @@
 
 ```bash
 mkdir lens && cd lens
-curl -fsSLO https://raw.githubusercontent.com/dyedd/lens/main/scripts/docker/deploy.sh
+curl -fsSLO https://raw.githubusercontent.com/fyyhub/lens/main/scripts/docker/deploy.sh
 sh deploy.sh
 ```
 
