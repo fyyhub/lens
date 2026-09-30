@@ -182,12 +182,28 @@ class AppState:
 
     async def _check_version_update(self) -> None:
         async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.get(
-                "https://api.github.com/repos/fyyhub/lens/releases/latest",
-                headers={"Accept": "application/vnd.github.v3+json"},
-            )
-            response.raise_for_status()
-            data = response.json()
+            try:
+                response = await client.get(
+                    "https://api.github.com/repos/fyyhub/lens/releases/latest",
+                    headers={"Accept": "application/vnd.github.v3+json"},
+                )
+                if response.status_code == 404:
+                    await self.settings_repo.upsert_settings(
+                        [
+                            SettingItem(
+                                key=SETTING_VERSION_CHECK_AT,
+                                value=datetime.now(UTC).isoformat(),
+                            ),
+                            SettingItem(key=SETTING_LATEST_VERSION, value=""),
+                            SettingItem(key=SETTING_LATEST_VERSION_URL, value=""),
+                        ]
+                    )
+                    return
+                response.raise_for_status()
+                data = response.json()
+            except Exception as exc:
+                logger.warning("Version update check failed: %s", exc)
+                return
 
             latest_version = data.get("tag_name", "").lstrip("v")
             release_url = data.get("html_url", "")

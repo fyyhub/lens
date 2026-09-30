@@ -3,7 +3,7 @@ set -eu
 
 umask 077
 
-RAW_BASE_URL="https://raw.githubusercontent.com/dyedd/lens/main"
+RAW_BASE_URL="https://raw.githubusercontent.com/fyyhub/lens/main"
 
 download_file() (
     url="$1"

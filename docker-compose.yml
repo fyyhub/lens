@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/dyedd/lens:latest
+    image: ghcr.io/fyyhub/lens:latest
     container_name: lens
     restart: unless-stopped
     env_file:

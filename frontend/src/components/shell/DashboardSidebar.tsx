@@ -21,7 +21,7 @@ import {
 import { cn } from "@/lib/classNames";
 import type { Locale } from "@/lib/I18nContext";
 
-const GITHUB_REPO_URL = "https://github.com/dyedd/lens";
+const GITHUB_REPO_URL = "https://github.com/fyyhub/lens";
 
 export interface DashboardSidebarNavItem {
   key: DashboardView;
@@ -122,6 +122,10 @@ export function DashboardSidebar({
   locale,
 }: DashboardSidebarProps) {
   const versionText = locale === "zh-CN" ? "版本号" : "Version";
+  const safeReleaseUrl =
+    updateReleaseUrl && !updateReleaseUrl.includes("dyedd/lens")
+      ? updateReleaseUrl
+      : "https://github.com/fyyhub/lens/releases";
 
   return (
     <Sidebar collapsible="icon" className="z-20 bg-sidebar">
@@ -190,36 +194,21 @@ export function DashboardSidebar({
             </span>
           </div>
           {hasUpdate ? (
-            updateReleaseUrl ? (
-              <Badge
-                asChild
-                variant="destructive"
-                className="mx-auto max-w-full group-data-[collapsible=icon]:size-5 group-data-[collapsible=icon]:px-0"
-                title={updateTitle}
-              >
-                <a href={updateReleaseUrl} target="_blank" rel="noreferrer">
-                  <span className="group-data-[collapsible=icon]:hidden">
-                    {updateLabel}
-                  </span>
-                  <span className="hidden group-data-[collapsible=icon]:inline">
-                    !
-                  </span>
-                </a>
-              </Badge>
-            ) : (
-              <Badge
-                variant="destructive"
-                className="mx-auto max-w-full group-data-[collapsible=icon]:size-5 group-data-[collapsible=icon]:px-0"
-                title={updateTitle}
-              >
+            <Badge
+              asChild
+              variant="destructive"
+              className="mx-auto max-w-full group-data-[collapsible=icon]:size-5 group-data-[collapsible=icon]:px-0"
+              title={updateTitle}
+            >
+              <a href={safeReleaseUrl} target="_blank" rel="noreferrer">
                 <span className="group-data-[collapsible=icon]:hidden">
                   {updateLabel}
                 </span>
                 <span className="hidden group-data-[collapsible=icon]:inline">
                   !
                 </span>
-              </Badge>
-            )
+              </a>
+            </Badge>
           ) : null}
           <SidebarMenu>
             <SidebarMenuItem>

@@ -156,7 +156,7 @@ export function LoginScreen() {
 
         <footer className="mt-6 text-center text-xs text-muted-foreground">
           <a
-            href="https://github.com/dyedd/lens"
+            href="https://github.com/fyyhub/lens"
             target="_blank"
             rel="noreferrer"
             className="font-medium text-foreground hover:underline"

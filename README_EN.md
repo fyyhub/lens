@@ -99,7 +99,7 @@ Self-hosted multi-protocol LLM gateway that organizes providers by site, Base UR
         ▼              ▼              ▼              ▼
    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────────┐
    │ OpenAI  │    │Anthropic│    │ Gemini  │    │Compatible│
-   └─────────┘    └─────────┘    └─────────┘    └──────────┘
+   └─────────┘    └─────────┘    └─────��───┘    └──────────┘
 ```
 
 ## Features
@@ -139,7 +139,7 @@ Self-hosted multi-protocol LLM gateway that organizes providers by site, Base UR
 
 ```bash
 mkdir lens && cd lens
-curl -fsSLO https://raw.githubusercontent.com/dyedd/lens/main/scripts/docker/deploy.sh
+curl -fsSLO https://raw.githubusercontent.com/fyyhub/lens/main/scripts/docker/deploy.sh
 sh deploy.sh
 ```
 

@@ -134,3 +134,34 @@ def test_change_password_updates_admin_password(client, admin_headers) -> None:
     )
     assert old_login.status_code == 401
     assert new_login.status_code == 200
+
+
+def test_check_version_cleans_legacy_upstream_repo_url(
+    client, admin_headers, app_state
+) -> None:
+    from conftest import run_async
+
+    from app.models.settings import SettingItem
+    from app.persistence.settings_keys import (
+        SETTING_LATEST_VERSION,
+        SETTING_LATEST_VERSION_URL,
+    )
+
+    run_async(
+        app_state.settings_repo.upsert_settings(
+            [
+                SettingItem(key=SETTING_LATEST_VERSION, value="99.0.0"),
+                SettingItem(
+                    key=SETTING_LATEST_VERSION_URL,
+                    value="https://github.com/dyedd/lens/releases/tag/v99.0.0",
+                ),
+            ]
+        )
+    )
+
+    response = client.get("/api/admin/version-check", headers=admin_headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["has_update"] is False
+    assert data["latest_version"] == ""
+    assert data["release_url"] == ""

@@ -36,7 +36,7 @@ FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 
 FROM python:3.14-slim AS runner
 
-LABEL org.opencontainers.image.source="https://github.com/dyedd/lens"
+LABEL org.opencontainers.image.source="https://github.com/fyyhub/lens"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
