@@ -442,32 +442,57 @@ export function useChannelForm(locale: Locale) {
       })),
     }));
   }
-  function updateAllModelSources(source: FormModel["source"]) {
-    const hasModelChanges = form.protocolConfigs.some((config) =>
-      config.models.some((model) => model.source !== source),
+  /**
+   * Switches model sources in bulk. Passing overview row keys limits the
+   * switch to those rows, so search results can be switched as one batch.
+   */
+  function updateAllModelSources(
+    source: FormModel["source"],
+    modelKeys?: string[],
+  ) {
+    const scope = modelKeys ? new Set(modelKeys) : null;
+    const isInScope = (config: FormProtocolConfig, modelName: string) =>
+      !scope || scope.has(aggregateModelGroupKey(config, modelName));
+    const modelsToSwitch = (config: FormProtocolConfig) =>
+      config.models.filter(
+        (model) =>
+          model.source !== source && isInScope(config, model.model_name),
+      );
+    const hasModelChanges = form.protocolConfigs.some(
+      (config) => modelsToSwitch(config).length > 0,
     );
     const hasTargetChanges =
-      source === "manual"
-        ? form.protocolConfigs.some((config) => config.sync_targets.length)
-        : false;
+      source === "manual" &&
+      form.protocolConfigs.some((config) =>
+        config.sync_targets.some((target) =>
+          isInScope(config, target.model_name),
+        ),
+      );
     if (!hasModelChanges && !hasTargetChanges) return;
     setForm((current) => ({
       ...current,
       protocolConfigs: current.protocolConfigs.map((config) => {
         const updated = updateModelSources(
           config,
-          config.models.filter((model) => model.source !== source),
+          modelsToSwitch(config),
           source,
         );
+        // Switching to manual also drops pending targets that have no model row.
         return source === "manual"
-          ? { ...config, models: updated.models, sync_targets: [] }
+          ? {
+              ...config,
+              models: updated.models,
+              sync_targets: config.sync_targets.filter(
+                (target) => !isInScope(config, target.model_name),
+              ),
+            }
           : { ...config, ...updated };
       }),
     }));
     toast.success(
       locale === "zh-CN"
-        ? `已将模型切换为${source === "synced" ? "同步" : "手动"}`
-        : `Switched models to ${source === "synced" ? "synced" : "manual"}`,
+        ? `已将${scope ? "搜索结果中的" : ""}模型切换为${source === "synced" ? "同步" : "手动"}`
+        : `Switched ${scope ? "matching " : ""}models to ${source === "synced" ? "synced" : "manual"}`,
     );
   }
   function clearModels() {

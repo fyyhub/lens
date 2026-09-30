@@ -1,14 +1,8 @@
-import { CircleHelp, Plus, RefreshCcw } from "lucide-react";
+import { Plus, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { Separator } from "@/components/ui/Separator";
-import { Switch } from "@/components/ui/Switch";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/Tooltip";
 import type { FormProtocolConfig, Locale } from "./channelTypes";
 import { ProtocolMultiSelect } from "./ProtocolMultiSelect";
 
@@ -94,7 +88,7 @@ export function ProtocolConfigModelActions({
             {locale === "zh-CN" ? "添加模型" : "Add model"}
           </Button>
         </div>
-        <div className="grid min-w-0 gap-2 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-end">
+        <div className="grid min-w-0 gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <Field>
             <FieldLabel>
               {locale === "zh-CN" ? "上游筛选" : "Upstream filter"}
@@ -106,8 +100,8 @@ export function ProtocolConfigModelActions({
               }
               placeholder={
                 locale === "zh-CN"
-                  ? "筛选上游模型（支持正则），留空则匹配全部。"
-                  : "Filter upstream models (supports regular expressions); leave blank to match all."
+                  ? "筛选上游模型（支持正则），留空匹配全部，仅本次获取有效"
+                  : "Filter upstream models (regex supported); leave blank to match all. Applies to this fetch only."
               }
             />
           </Field>
@@ -123,34 +117,6 @@ export function ProtocolConfigModelActions({
             />
             {locale === "zh-CN" ? "从上游选择" : "Select from upstream"}
           </Button>
-          <div className="flex items-center gap-1">
-            <label className="flex h-9 cursor-pointer items-center gap-2 px-2 text-sm font-medium">
-              <Switch
-                checked={protocolConfig.sync_new_models}
-                onCheckedChange={(checked) =>
-                  onUpdate({ sync_new_models: checked })
-                }
-              />
-              <span>{locale === "zh-CN" ? "同步" : "Sync"}</span>
-            </label>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={locale === "zh-CN" ? "同步说明" : "Sync details"}
-                >
-                  <CircleHelp />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" align="end" className="max-w-sm">
-                {locale === "zh-CN"
-                  ? "开启后，新添加或从上游选择的模型默认为同步；关闭时默认为手动。此开关不会修改模型总览中的现有模型。上游筛选仅用于本次获取，不会保存。"
-                  : "When enabled, newly added or selected upstream models default to synced; otherwise they default to manual. This switch does not change existing models in the overview. The upstream filter is used only for this fetch and is not saved."}
-              </TooltipContent>
-            </Tooltip>
-          </div>
         </div>
       </FieldGroup>
     </div>

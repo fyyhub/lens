@@ -68,7 +68,10 @@ type ChannelEditorDialogProps = {
     modelKey: string,
     source: AggregatedModel["source"],
   ) => void;
-  updateAllModelSources: (source: AggregatedModel["source"]) => void;
+  updateAllModelSources: (
+    source: AggregatedModel["source"],
+    modelKeys?: string[],
+  ) => void;
   openAggregateModelTest: (modelKey: string) => void;
   removeAggregateModel: (modelKey: string) => void;
   clearModels: () => void;

@@ -91,7 +91,7 @@ export function useChannelModelPicker({
       credentialIds,
       modelName,
       protocols,
-      config.sync_new_models ? "synced" : "manual",
+      "manual",
     );
     if (!newModels.length) {
       toast.info(locale === "zh-CN" ? "模型已存在" : "Model already exists");
@@ -106,26 +106,13 @@ export function useChannelModelPicker({
               manual_model_name: "",
               expanded: true,
               models: [...item.models, ...newModels],
-              sync_targets: [
-                ...item.sync_targets.filter(
-                  (target) =>
-                    !newModels.some(
-                      (model) =>
-                        genericModelKey(model) === genericModelKey(target),
-                    ),
-                ),
-                ...(item.sync_new_models
-                  ? [
-                      ...newModels.flatMap((model) =>
-                        model.protocols.map((protocol) => ({
-                          credential_id: model.credential_id,
-                          model_name: model.model_name,
-                          protocol,
-                        })),
-                      ),
-                    ]
-                  : []),
-              ],
+              sync_targets: item.sync_targets.filter(
+                (target) =>
+                  !newModels.some(
+                    (model) =>
+                      genericModelKey(model) === genericModelKey(target),
+                  ),
+              ),
             }
           : item,
       ),
@@ -348,14 +335,11 @@ export function useChannelModelPicker({
             ...item.models.filter(
               (model) => !selectedKeys.has(genericModelKey(model)),
             ),
-            ...selectedModels.map((model) => {
+            ...selectedModels.map((model): FormModel => {
               const key = genericModelKey(model);
               const existingModels = item.models.filter(
                 (candidate) => genericModelKey(candidate) === key,
               );
-              const source: FormModel["source"] = item.sync_new_models
-                ? "synced"
-                : "manual";
               return {
                 protocols: protocolsForName(model.model_name),
                 protocolIds: existingModels.reduce<FormModel["protocolIds"]>(
@@ -368,24 +352,13 @@ export function useChannelModelPicker({
                 credential_id: model.credential_id,
                 model_name: model.model_name,
                 enabled: true,
-                source,
+                source: "manual",
               };
             }),
           ],
-          sync_targets: [
-            ...item.sync_targets.filter(
-              (target) => !selectedKeys.has(genericModelKey(target)),
-            ),
-            ...(item.sync_new_models
-              ? selectedModels.flatMap((model) =>
-                  protocolsForName(model.model_name).map((protocol) => ({
-                    credential_id: model.credential_id,
-                    model_name: model.model_name,
-                    protocol,
-                  })),
-                )
-              : []),
-          ],
+          sync_targets: item.sync_targets.filter(
+            (target) => !selectedKeys.has(genericModelKey(target)),
+          ),
         };
       }),
     }));
