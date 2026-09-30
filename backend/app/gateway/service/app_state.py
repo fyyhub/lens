@@ -183,7 +183,7 @@ class AppState:
     async def _check_version_update(self) -> None:
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.get(
-                "https://api.github.com/repos/dyedd/lens/releases/latest",
+                "https://api.github.com/repos/fyyhub/lens/releases/latest",
                 headers={"Accept": "application/vnd.github.v3+json"},
             )
             response.raise_for_status()
