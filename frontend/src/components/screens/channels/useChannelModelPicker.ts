@@ -161,6 +161,7 @@ export function useChannelModelPicker({
       );
       return null;
     }
+    const fetchCredentialIds = credentialIds.slice(0, 1);
     const baseUrl = activeBaseUrlValue(form, config);
     if (!baseUrl.trim()) {
       toast.error(locale === "zh-CN" ? "地址为空" : "Base URL is empty");
@@ -170,7 +171,7 @@ export function useChannelModelPicker({
       return null;
     setFetchingProtocolConfigIndex(configIndex);
     try {
-      const selected = new Set(credentialIds);
+      const selected = new Set(fetchCredentialIds);
       const payload: SiteModelFetchPayload = {
         base_url: baseUrl.trim(),
         headers: formHeaders(config),
@@ -185,7 +186,7 @@ export function useChannelModelPicker({
             enabled: item.enabled,
           }))
           .filter((item) => item.api_key && selected.has(item.id)),
-        credential_ids: credentialIds,
+        credential_ids: fetchCredentialIds,
       };
       const models = await apiRequest<SiteModelFetchItem[]>(
         "/admin/site-model-discoveries",
