@@ -118,8 +118,8 @@ export function ChannelModelSyncDialog({
                 </AlertTitle>
                 <AlertDescription>
                   {locale === "zh-CN"
-                    ? "请先在渠道协议配置中开启「同步」，或把模型来源改为同步，并确保地址、密钥和上游协议均已启用。"
-                    : "Click Sync in a channel protocol config or switch models to synced, and make sure the URL, key, and upstream protocol are enabled."}
+                    ? "请先在渠道编辑的「模型总览」中将模型切换为「同步」，并确保地址、密钥和上游协议均已启用。"
+                    : "Switch models to Synced in the channel editor's Model Overview, and make sure the URL, key, and upstream protocol are enabled."}
                 </AlertDescription>
               </Alert>
             ) : null}

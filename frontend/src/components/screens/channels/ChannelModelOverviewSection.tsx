@@ -1,6 +1,7 @@
 import {
   ArrowLeftRight,
   ChevronDown,
+  CircleHelp,
   Pencil,
   RefreshCcw,
   Trash2,
@@ -16,6 +17,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
 import { ToolbarSearchInput } from "@/components/ui/ToolbarSearchInput";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/Tooltip";
 import type { ProtocolKind } from "@/lib/api/protocols";
 import type { Locale, TestableModelOption } from "./channelTypes";
 import { SiteModelAggregateView } from "./SiteModelAggregateView";
@@ -34,7 +40,10 @@ type Props = {
     modelKey: string,
     source: AggregatedModel["source"],
   ) => void;
-  onUpdateAllModelSources: (source: AggregatedModel["source"]) => void;
+  onUpdateAllModelSources: (
+    source: AggregatedModel["source"],
+    modelKeys?: string[],
+  ) => void;
   onOpenModelTest: (modelKey: string) => void;
   onRemoveModel: (modelKey: string) => void;
   onClearModels: () => void;
@@ -67,19 +76,75 @@ export function ChannelModelOverviewSection({
     );
   }, [lowerSearchQuery, overviewModels]);
   const hasSearch = lowerSearchQuery.length > 0;
-  const hasManualModels = overviewModels.some(
-    (model) => model.source === "manual",
+  const bulkModels = hasSearch ? filteredModels : overviewModels;
+  const hasManualModels = bulkModels.some((model) =>
+    model.members.some((member) => member.source === "manual"),
   );
-  const hasSyncedModels = overviewModels.some(
-    (model) => model.source === "synced",
+  const hasSyncedModels = bulkModels.some((model) =>
+    model.members.some((member) => member.source === "synced"),
   );
+  const switchBulkModelSources = (source: AggregatedModel["source"]) =>
+    onUpdateAllModelSources(
+      source,
+      hasSearch ? filteredModels.map((model) => model.key) : undefined,
+    );
+  const bulkSourceLabel = (source: AggregatedModel["source"]) => {
+    const zhSource = source === "synced" ? "同步" : "手动";
+    const enSource = source === "synced" ? "synced" : "manual";
+    if (!hasSearch) {
+      return locale === "zh-CN"
+        ? `全部设为${zhSource}`
+        : `Set all to ${enSource}`;
+    }
+    const count = filteredModels.length;
+    return locale === "zh-CN"
+      ? `将 ${count} 个搜索结果设为${zhSource}`
+      : `Set ${count} ${count === 1 ? "result" : "results"} to ${enSource}`;
+  };
+  const sourceHelpLines =
+    locale === "zh-CN"
+      ? [
+          "新添加的模型默认为手动，可在此逐个或批量切换为同步。",
+          "手动：始终保留，不受上游变化影响。",
+          "同步：跟随上游，上游下架后显示「待上游恢复」，重新上架后自动加回。",
+          "搜索时，批量切换仅作用于搜索结果。",
+        ]
+      : [
+          "New models default to Manual; switch them to Synced here, one by one or in bulk.",
+          "Manual: always kept, unaffected by upstream changes.",
+          "Synced: follows upstream. Shown as Awaiting upstream when removed upstream, and restored automatically when it returns.",
+          "While searching, bulk switch applies only to the results.",
+        ];
 
   return (
     <div className="mt-4">
       <div className="mb-2 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="shrink-0 text-base font-semibold text-foreground">
-            {locale === "zh-CN" ? "模型总览" : "Model Overview"}
+          <div className="flex shrink-0 items-center gap-1">
+            <div className="text-base font-semibold text-foreground">
+              {locale === "zh-CN" ? "模型总览" : "Model Overview"}
+            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={
+                    locale === "zh-CN" ? "模型来源说明" : "Model source details"
+                  }
+                >
+                  <CircleHelp />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="start" className="max-w-sm">
+                <div className="flex flex-col gap-1">
+                  {sourceHelpLines.map((line) => (
+                    <p key={line}>{line}</p>
+                  ))}
+                </div>
+              </TooltipContent>
+            </Tooltip>
           </div>
           {overviewModels.length ? (
             <>
@@ -140,7 +205,7 @@ export function ChannelModelOverviewSection({
                 type="button"
                 variant="outline"
                 size="sm"
-                disabled={!overviewModels.length}
+                disabled={!bulkModels.length}
               >
                 <ArrowLeftRight data-icon="inline-start" />
                 {locale === "zh-CN" ? "批量切换" : "Bulk switch"}
@@ -150,18 +215,18 @@ export function ChannelModelOverviewSection({
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
                 <DropdownMenuItem
-                  onSelect={() => onUpdateAllModelSources("manual")}
+                  onSelect={() => switchBulkModelSources("manual")}
                   disabled={!hasSyncedModels}
                 >
                   <Pencil />
-                  {locale === "zh-CN" ? "全部设为手动" : "Set all to manual"}
+                  {bulkSourceLabel("manual")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={() => onUpdateAllModelSources("synced")}
+                  onSelect={() => switchBulkModelSources("synced")}
                   disabled={!hasManualModels}
                 >
                   <RefreshCcw />
-                  {locale === "zh-CN" ? "全部设为同步" : "Set all to synced"}
+                  {bulkSourceLabel("synced")}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>

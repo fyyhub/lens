@@ -35,7 +35,6 @@ export type FormProtocolConfig = {
   channel_proxy: string;
   param_override: ParamOverrideRuleDraft[];
   model_filter: string;
-  sync_new_models: boolean;
   manual_model_name: string;
   manual_protocols: ProtocolKind[];
   base_url_id: string;
