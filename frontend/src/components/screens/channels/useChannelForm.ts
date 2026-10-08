@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import type { ProtocolKind } from "@/lib/api/protocols";
 import type { Site } from "@/lib/api/sites";
 import {
+  canonicalizeCredentialIds,
   defaultBaseUrlId,
   protocolConfigSelectedCredentialIds,
   resolveBaseUrlId,
@@ -35,6 +36,7 @@ import type {
   FormModel,
   FormProtocolConfig,
   FormState,
+  FormSyncTarget,
   HeaderItem,
   Locale,
 } from "./channelTypes";
@@ -112,6 +114,68 @@ function validateChannelForm(
   return true;
 }
 
+function cloneModelsAndTargetsForCredentials(
+  models: FormModel[],
+  syncTargets: FormSyncTarget[],
+  credentialIds: string[],
+): { clonedModels: FormModel[]; clonedTargets: FormSyncTarget[] } {
+  if (!credentialIds.length || !models.length) {
+    return { clonedModels: [], clonedTargets: [] };
+  }
+
+  const existingModelKeys = new Set(models.map(genericModelKey));
+  const uniqueModelTemplates = new Map<string, FormModel>();
+  for (const model of models) {
+    if (!uniqueModelTemplates.has(model.model_name)) {
+      uniqueModelTemplates.set(model.model_name, model);
+    }
+  }
+
+  const clonedModels: FormModel[] = [];
+  for (const credentialId of credentialIds) {
+    for (const template of uniqueModelTemplates.values()) {
+      const key = genericModelKey({
+        credential_id: credentialId,
+        model_name: template.model_name,
+      });
+      if (!existingModelKeys.has(key)) {
+        existingModelKeys.add(key);
+        clonedModels.push({
+          ...template,
+          protocolIds: {},
+          credential_id: credentialId,
+        });
+      }
+    }
+  }
+
+  const existingTargetKeys = new Set(syncTargets.map(syncTargetKey));
+  const uniqueTargetTemplates = new Map<string, FormSyncTarget>();
+  for (const target of syncTargets) {
+    const tKey = `${target.model_name}:${target.protocol}`;
+    if (!uniqueTargetTemplates.has(tKey)) {
+      uniqueTargetTemplates.set(tKey, target);
+    }
+  }
+
+  const clonedTargets: FormSyncTarget[] = [];
+  for (const credentialId of credentialIds) {
+    for (const template of uniqueTargetTemplates.values()) {
+      const candidate: FormSyncTarget = {
+        ...template,
+        credential_id: credentialId,
+      };
+      const key = syncTargetKey(candidate);
+      if (!existingTargetKeys.has(key)) {
+        existingTargetKeys.add(key);
+        clonedTargets.push(candidate);
+      }
+    }
+  }
+
+  return { clonedModels, clonedTargets };
+}
+
 /**
  * Appends credentials and links them into every compatible protocol config,
  * cloning the config's model rows and sync targets onto each new credential so
@@ -154,29 +218,10 @@ function applyNewCredentials(
         claimedKeys.add(keyFor(credentialId, protocol));
       }
     }
-    const modelKeys = new Set(config.models.map(genericModelKey));
-    const clonedModels = config.models.flatMap((model) =>
-      applicableIds
-        .filter(
-          (credentialId) =>
-            !modelKeys.has(
-              genericModelKey({
-                credential_id: credentialId,
-                model_name: model.model_name,
-              }),
-            ),
-        )
-        .map((credentialId) => ({
-          ...model,
-          protocolIds: {},
-          credential_id: credentialId,
-        })),
-    );
-    const targetKeys = new Set(config.sync_targets.map(syncTargetKey));
-    const clonedTargets = config.sync_targets.flatMap((target) =>
-      applicableIds
-        .map((credentialId) => ({ ...target, credential_id: credentialId }))
-        .filter((candidate) => !targetKeys.has(syncTargetKey(candidate))),
+    const { clonedModels, clonedTargets } = cloneModelsAndTargetsForCredentials(
+      config.models,
+      config.sync_targets,
+      applicableIds,
     );
     return {
       ...config,
@@ -351,15 +396,35 @@ export function useChannelForm(locale: Locale) {
         if (i !== index) return config;
         const next = { ...config, ...patch };
         if (!patch.credential_ids) return next;
-        const credentialIds = new Set(next.credential_ids);
+        const prevCredentialIds = new Set(config.credential_ids);
+        const nextCredentialIds = canonicalizeCredentialIds(
+          next.credential_ids,
+        );
+        const nextCredentialSet = new Set(nextCredentialIds);
+
+        const retainedModels = next.models.filter((model) =>
+          nextCredentialSet.has(model.credential_id),
+        );
+        const retainedSyncTargets = next.sync_targets.filter((target) =>
+          nextCredentialSet.has(target.credential_id),
+        );
+
+        const addedCredentialIds = nextCredentialIds.filter(
+          (id) => !prevCredentialIds.has(id),
+        );
+
+        const { clonedModels, clonedTargets } =
+          cloneModelsAndTargetsForCredentials(
+            retainedModels,
+            retainedSyncTargets,
+            addedCredentialIds,
+          );
+
         return {
           ...next,
-          models: next.models.filter((model) =>
-            credentialIds.has(model.credential_id),
-          ),
-          sync_targets: next.sync_targets.filter((target) =>
-            credentialIds.has(target.credential_id),
-          ),
+          credential_ids: nextCredentialIds,
+          models: [...retainedModels, ...clonedModels],
+          sync_targets: [...retainedSyncTargets, ...clonedTargets],
         };
       }),
     }));
