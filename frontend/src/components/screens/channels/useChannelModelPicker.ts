@@ -185,13 +185,26 @@ export function useChannelModelPicker({
           index === configIndex ? { ...item, model_filter: "" } : item,
         ),
       }));
+      const credentialMap = new Map(
+        form.credentials.map((item, index) => [
+          item.id,
+          item.name.trim() || fallbackCredentialName(index),
+        ]),
+      );
+      const uniqueModelNames = Array.from(
+        new Set(models.map((item) => item.model_name.trim()).filter(Boolean)),
+      );
+      const expandedModels: PickerModelItem[] = uniqueModelNames.flatMap(
+        (modelName) =>
+          credentialIds.map((cid) => ({
+            credential_id: cid,
+            credential_name: credentialMap.get(cid) ?? "",
+            model_name: modelName,
+          })),
+      );
       return {
         config,
-        models: models.map((item) => ({
-          credential_id: item.credential_id,
-          credential_name: item.credential_name,
-          model_name: item.model_name,
-        })),
+        models: expandedModels,
       };
     } catch (error) {
       toast.error(
