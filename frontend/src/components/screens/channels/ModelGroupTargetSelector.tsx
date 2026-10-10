@@ -63,7 +63,7 @@ export function ModelGroupTargetSelector({
 
   return (
     <div className="flex max-w-[360px] flex-col gap-1.5">
-      <Popover open={isOpen} onOpenChange={onOpenChange}>
+      <Popover modal={true} open={isOpen} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>
           <Button
             type="button"
@@ -86,6 +86,8 @@ export function ModelGroupTargetSelector({
         <PopoverContent
           align="start"
           className="w-[var(--radix-popover-trigger-width)] p-0"
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
         >
           <Command>
             <CommandInput

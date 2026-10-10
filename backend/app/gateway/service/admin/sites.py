@@ -114,6 +114,9 @@ def _build_model_group_inputs(
     site: SiteConfig,
     existing_group_names: Iterable[str],
     grouped_model_keys: set[tuple[str, str, str, ProtocolKind]],
+    *,
+    by_config_and_model: dict[tuple[str, str], str] | None = None,
+    by_model_name: dict[str, str] | None = None,
 ) -> list[ModelGroupEnsureModelInput]:
     group_names = [name.strip() for name in existing_group_names if name.strip()]
     enabled_base_urls = {item.id for item in site.base_urls if item.enabled}
@@ -145,12 +148,28 @@ def _build_model_group_inputs(
             )
             if key in grouped_model_keys:
                 continue
+
+            suggested_group = ""
+            if (
+                by_config_and_model
+                and (protocol_config.id, model_name) in by_config_and_model
+            ):
+                candidate = by_config_and_model[(protocol_config.id, model_name)]
+                if candidate in group_names:
+                    suggested_group = candidate
+            if not suggested_group and by_model_name and model_name in by_model_name:
+                candidate = by_model_name[model_name]
+                if candidate in group_names:
+                    suggested_group = candidate
+            if not suggested_group:
+                suggested_group = _suggest_model_group_name(model_name, group_names)
+
             inputs.append(
                 ModelGroupEnsureModelInput(
                     protocol_config_id=protocol_config.id,
                     credential_id=model.credential_id,
                     model_name=model_name,
-                    group_name=_suggest_model_group_name(model_name, group_names),
+                    group_name=suggested_group,
                     protocols=[model.protocol],
                 )
             )
@@ -181,10 +200,20 @@ async def _save_site_with_model_groups(
         grouped_model_keys = (
             await app_state.group_repo.list_grouped_model_keys_in_session(session)
         )
+        (
+            by_config_and_model,
+            by_model_name,
+        ) = await app_state.group_repo.list_model_to_group_name_mappings_in_session(
+            session
+        )
         models = payload.models
         if models is None:
             models = _build_model_group_inputs(
-                saved_site, group_names, grouped_model_keys
+                saved_site,
+                group_names,
+                grouped_model_keys,
+                by_config_and_model=by_config_and_model,
+                by_model_name=by_model_name,
             )
         group_result = await app_state.group_repo.ensure_groups_from_site_in_session(
             session,

@@ -49,6 +49,9 @@ export function ModelGroupEnsureDialog({
   const [createGroupNameDrafts, setCreateGroupNameDrafts] = useState<
     Record<string, string>
   >({});
+  const [userCustomCreateNames, setUserCustomCreateNames] = useState<
+    Record<string, string>
+  >({});
   const [createGroupNameErrors, setCreateGroupNameErrors] = useState<
     Record<string, string>
   >({});
@@ -60,12 +63,13 @@ export function ModelGroupEnsureDialog({
     key: string,
     targetGroupIsSelectable: boolean,
   ) {
-    return (
-      createGroupNameDrafts[key] ??
-      (targetGroupIsSelectable
-        ? item.group_name
-        : nextCreateModelGroupName(item.model_name, modelGroups))
-    );
+    if (userCustomCreateNames[key]) {
+      return userCustomCreateNames[key];
+    }
+    if (createGroupNameDrafts[key] && !targetGroupIsSelectable) {
+      return createGroupNameDrafts[key];
+    }
+    return nextCreateModelGroupName(item.model_name, modelGroups);
   }
 
   function clearCreateGroupNameError(key: string) {
@@ -78,7 +82,11 @@ export function ModelGroupEnsureDialog({
 
   function commitCreateGroupName(item: ModelGroupEnsureResultItem) {
     const key = modelGroupEnsureResultKey(item);
-    const nextGroupName = createGroupNameDrafts[key]?.trim();
+    const nextGroupName = (
+      userCustomCreateNames[key] ??
+      createGroupNameDrafts[key] ??
+      ""
+    ).trim();
     if (!nextGroupName) return;
     const matchedGroup = executionModelGroups(modelGroups).find(
       (group) => group.name === nextGroupName,
@@ -94,6 +102,10 @@ export function ModelGroupEnsureDialog({
       return;
     }
     clearCreateGroupNameError(key);
+    setUserCustomCreateNames((current) => ({
+      ...current,
+      [key]: nextGroupName,
+    }));
     setCreateGroupNameDrafts((current) => ({
       ...current,
       [key]: nextGroupName,
@@ -103,11 +115,22 @@ export function ModelGroupEnsureDialog({
     }
   }
 
+  function handleDraftChange(key: string, value: string) {
+    clearCreateGroupNameError(key);
+    setUserCustomCreateNames((current) => ({
+      ...current,
+      [key]: value,
+    }));
+    setCreateGroupNameDrafts((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
   function selectCreateTarget(item: ModelGroupEnsureResultItem, key: string) {
-    const nextGroupName = nextCreateModelGroupName(
-      item.model_name,
-      modelGroups,
-    );
+    const nextGroupName =
+      userCustomCreateNames[key]?.trim() ||
+      nextCreateModelGroupName(item.model_name, modelGroups);
     clearCreateGroupNameError(key);
     setCreateGroupNameDrafts((current) => ({
       ...current,
@@ -205,13 +228,7 @@ export function ModelGroupEnsureDialog({
               onOpenTargetGroupChange={setOpenTargetGroupKey}
               onSelectCreate={selectCreateTarget}
               onSelectExisting={selectExistingTarget}
-              onDraftChange={(key, value) => {
-                clearCreateGroupNameError(key);
-                setCreateGroupNameDrafts((current) => ({
-                  ...current,
-                  [key]: value,
-                }));
-              }}
+              onDraftChange={handleDraftChange}
               onCommitDraft={commitCreateGroupName}
             />
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
