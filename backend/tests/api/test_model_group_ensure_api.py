@@ -289,6 +289,83 @@ def test_transactional_site_save_removes_deleted_model_protocol_from_group(
     ]
 
 
+def test_repeated_site_save_preserves_manually_selected_target_model_group(
+    client,
+    admin_headers,
+    create_site,
+    create_model_group,
+) -> None:
+    # 1. 创建一个非同名目标组
+    target_group = create_model_group(name="Production-Claude")
+
+    # 2. 初始保存渠道，并在第一次保存时手动指定放入 Production-Claude
+    site_payload = valid_site_payload(
+        name="Claude Channel",
+        model_name="claude-3-7-sonnet-20250219",
+        protocols=["openai_chat"],
+    )
+    site = create_site(site_payload)
+    pc_id = site["protocols"][0]["id"]
+    cred_id = site["credentials"][0]["id"]
+
+    # 模拟第一次确认时用户手动调整目标组为 Production-Claude
+    commit_res = client.put(
+        f"/api/admin/sites/{site['id']}/with-model-groups",
+        headers=admin_headers,
+        json={
+            **site_payload,
+            "dry_run": False,
+            "models": [
+                {
+                    "protocol_config_id": pc_id,
+                    "credential_id": cred_id,
+                    "model_name": "claude-3-7-sonnet-20250219",
+                    "group_name": "Production-Claude",
+                    "protocols": ["openai_chat"],
+                }
+            ],
+        },
+    )
+    assert commit_res.status_code == 200, commit_res.text
+
+    # 3. 第二次编辑渠道：比如为该模型增加了另一个协议 anthropic
+    updated_payload = valid_site_payload(
+        name="Claude Channel Updated",
+        model_name="claude-3-7-sonnet-20250219",
+        protocols=["openai_chat", "anthropic"],
+    )
+    updated_payload["protocols"][0]["id"] = pc_id
+    updated_payload["credentials"][0]["id"] = cred_id
+    # 同步更新 models
+    updated_payload["protocols"][0]["models"] = [
+        {
+            "credential_id": cred_id,
+            "model_name": "claude-3-7-sonnet-20250219",
+            "enabled": True,
+            "protocol": "openai_chat",
+        },
+        {
+            "credential_id": cred_id,
+            "model_name": "claude-3-7-sonnet-20250219",
+            "enabled": True,
+            "protocol": "anthropic",
+        },
+    ]
+
+    # 第二次 preview（dry_run: True, models: None）
+    preview_res = client.put(
+        f"/api/admin/sites/{site['id']}/with-model-groups",
+        headers=admin_headers,
+        json={**updated_payload, "dry_run": True},
+    )
+    assert preview_res.status_code == 200, preview_res.text
+    preview_items = preview_res.json()["model_groups"]["items"]
+    assert len(preview_items) == 1
+    # 验证目标组名依然保留为上次手动指定的 Production-Claude，而不是默认的 claude-3-7-sonnet-20250219
+    assert preview_items[0]["group_name"] == "Production-Claude"
+
+
+
 @pytest.mark.parametrize("dry_run", [True, False])
 def test_ensure_model_groups_from_site_creates_group(
     client,

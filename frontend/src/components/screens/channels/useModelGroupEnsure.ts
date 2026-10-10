@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { toast } from "sonner";
 import { apiRequest, getApiErrorMessage } from "@/lib/api/client";
 import type {
@@ -55,6 +55,7 @@ export function useModelGroupEnsure({
   );
   const [groups, setGroups] = useState<ModelGroup[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const manualGroupOverridesRef = useRef<Map<string, string>>(new Map());
 
   async function requestSave(
     pending: PendingSave,
@@ -121,6 +122,7 @@ export function useModelGroupEnsure({
     editor.applyPreparedForm(toForm(committed.site, locale));
     editor.setIsDialogOpen(false);
     editor.setEditingSiteId(null);
+    manualGroupOverridesRef.current.clear();
     setModelGroupEnsureOpen(false);
     const changedCount =
       committed.model_groups.created_count +
@@ -152,7 +154,7 @@ export function useModelGroupEnsure({
         models: null,
       });
       const nextPending = { ...pending, siteId: preview.site.id };
-      const nextResult = preview.model_groups;
+      let nextResult = preview.model_groups;
       if (!nextResult.items.length) {
         await commitSave(nextPending, null);
         return;
@@ -161,6 +163,33 @@ export function useModelGroupEnsure({
         queryKey: ["model-groups"],
         queryFn: () => apiRequest<ModelGroup[]>("/admin/model-groups"),
       });
+
+      // 如果有之前在当前渠道手动选择过的覆盖项，且组名与当前默认不同
+      const activeOverrides = new Map<string, string>();
+      for (const item of nextResult.items) {
+        const key = modelGroupEnsureResultKey(item);
+        const override =
+          manualGroupOverridesRef.current.get(key) ??
+          manualGroupOverridesRef.current.get(item.model_name);
+        if (override && override !== item.group_name) {
+          activeOverrides.set(key, override);
+        }
+      }
+      if (activeOverrides.size > 0) {
+        try {
+          const patchedPreview = await requestSave(nextPending, {
+            dryRun: true,
+            models: modelGroupEnsureInputsFromResult(
+              nextResult.items,
+              activeOverrides,
+            ),
+          });
+          nextResult = patchedPreview.model_groups;
+        } catch {
+          // 降级使用原始preview结果
+        }
+      }
+
       setPendingSave(nextPending);
       setGroups(modelGroups);
       setResult(nextResult);
@@ -212,6 +241,8 @@ export function useModelGroupEnsure({
   async function updateTarget(item: ModelGroupEnsureResultItem, group: string) {
     if (!result) return;
     const changedKey = modelGroupEnsureResultKey(item);
+    manualGroupOverridesRef.current.set(changedKey, group);
+    manualGroupOverridesRef.current.set(item.model_name, group);
     const wasSelected = selectedKeys.includes(changedKey);
     const nextResult = await previewWithModels(
       modelGroupEnsureInputsFromResult(

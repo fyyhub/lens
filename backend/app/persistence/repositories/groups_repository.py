@@ -165,6 +165,34 @@ class ModelGroupRepository(
                 keys.add((parsed[0], credential_id, model_name, parsed[1]))
         return keys
 
+    async def list_model_to_group_name_mappings_in_session(
+        self, session: AsyncSession
+    ) -> tuple[dict[tuple[str, str], str], dict[str, str]]:
+        """Return mappings from (protocol_config_id, model_name) and model_name to group name."""
+        rows = await session.execute(
+            select(
+                ModelGroupItemEntity.channel_id,
+                ModelGroupItemEntity.model_name,
+                ModelGroupEntity.name,
+            )
+            .join(ModelGroupEntity, ModelGroupEntity.id == ModelGroupItemEntity.group_id)
+            .where(ModelGroupEntity.route_group_id == "")
+            .order_by(ModelGroupItemEntity.sort_order.asc(), ModelGroupItemEntity.id.asc())
+        )
+        by_config_and_model: dict[tuple[str, str], str] = {}
+        by_model_name: dict[str, str] = {}
+        for channel_id, model_name, group_name in rows.all():
+            trimmed_group = str(group_name).strip()
+            trimmed_model = str(model_name).strip()
+            if not trimmed_group or not trimmed_model:
+                continue
+            parsed = split_runtime_channel_id(channel_id)
+            if parsed is not None:
+                protocol_config_id = parsed[0]
+                by_config_and_model.setdefault((protocol_config_id, trimmed_model), trimmed_group)
+            by_model_name.setdefault(trimmed_model, trimmed_group)
+        return by_config_and_model, by_model_name
+
     async def create_group(self, payload: ModelGroupCreate) -> ModelGroupView:
         """Create and return a validated model group."""
         channels = await self._channel_store.list_channels()
