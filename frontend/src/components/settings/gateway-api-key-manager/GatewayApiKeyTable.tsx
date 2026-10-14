@@ -20,7 +20,11 @@ import {
   isGatewayKeyOutOfBalance,
   maskGatewayKey,
 } from "./gatewayApiKeyModel";
-import { formatDateOnly, formatDateTime } from "./gatewayDateTime";
+import {
+  formatDateOnly,
+  formatDateTime,
+  formatDateTimeWithSeconds,
+} from "./gatewayDateTime";
 
 type GatewayApiKeyTableProps = {
   locale: Locale;
@@ -137,8 +141,8 @@ function GatewayApiKeyTableRow({
             {item.expires_at
               ? titleForLocale(
                   locale,
-                  `到期 ${formatDateOnly(locale, item.expires_at, timeZone)}`,
-                  `Expires ${formatDateOnly(locale, item.expires_at, timeZone)}`,
+                  `到期 ${formatDateTimeWithSeconds(locale, item.expires_at, timeZone)}`,
+                  `Expires ${formatDateTimeWithSeconds(locale, item.expires_at, timeZone)}`,
                 )
               : titleForLocale(locale, "永不过期", "No expiry")}
           </div>

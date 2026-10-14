@@ -259,7 +259,14 @@ export function GatewayApiKeyDialog({
             <GatewayApiKeyExpiryField
               locale={locale}
               expiresOn={form.expiresOn}
-              onChange={(value) => updateForm("expiresOn", value)}
+              expiresTime={form.expiresTime}
+              timeZone={timeZone}
+              onExpiresOnChange={(value) => updateForm("expiresOn", value)}
+              onExpiresTimeChange={(value) => updateForm("expiresTime", value)}
+              onClear={() => {
+                updateForm("expiresOn", undefined);
+                updateForm("expiresTime", "23:59:59");
+              }}
             />
           </FieldGroup>
 

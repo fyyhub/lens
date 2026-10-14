@@ -10,6 +10,7 @@ export type GatewayApiKeyForm = {
   allowedModels: string[];
   maxCostUsd: string;
   expiresOn?: Date;
+  expiresTime: string;
 };
 
 export type GatewayModelGroupOption = {
@@ -25,6 +26,7 @@ export const EMPTY_FORM: GatewayApiKeyForm = {
   allowedModels: [],
   maxCostUsd: "0",
   expiresOn: undefined,
+  expiresTime: "23:59:59",
 };
 
 /** Masks a gateway API key while preserving recognizable edge characters. */
@@ -60,6 +62,7 @@ export function toGatewayApiKeyForm(
     allowedModels: [...item.allowed_models],
     maxCostUsd: String(item.max_cost_usd),
     expiresOn: expires.expiresOn,
+    expiresTime: expires.expiresTime,
   };
 }
 
@@ -73,7 +76,7 @@ export function toGatewayApiKeyPayload(
     enabled: form.enabled,
     allowed_models: form.isModelRestrictionEnabled ? form.allowedModels : [],
     max_cost_usd: Math.max(Number(form.maxCostUsd || "0") || 0, 0),
-    expires_at: formatExpiresAt(form.expiresOn, timeZone),
+    expires_at: formatExpiresAt(form.expiresOn, form.expiresTime, timeZone),
   };
 }
 
