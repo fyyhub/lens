@@ -67,6 +67,27 @@ export function BatchImportDialog({
         <AppDialogContent
           className="max-w-3xl"
           title={locale === "zh-CN" ? "批量导入渠道" : "Import channels"}
+          footer={
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={importing}
+              >
+                {locale === "zh-CN" ? "取消" : "Cancel"}
+              </Button>
+              <Button type="button" onClick={onImport} disabled={importing}>
+                {importing
+                  ? locale === "zh-CN"
+                    ? "导入中..."
+                    : "Importing..."
+                  : locale === "zh-CN"
+                    ? "导入"
+                    : "Import"}
+              </Button>
+            </>
+          }
         >
           <div className="grid gap-4">
             <input
@@ -194,25 +215,6 @@ export function BatchImportDialog({
               </div>
             ) : null}
 
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={importing}
-              >
-                {locale === "zh-CN" ? "取消" : "Cancel"}
-              </Button>
-              <Button type="button" onClick={onImport} disabled={importing}>
-                {importing
-                  ? locale === "zh-CN"
-                    ? "导入中..."
-                    : "Importing..."
-                  : locale === "zh-CN"
-                    ? "导入"
-                    : "Import"}
-              </Button>
-            </div>
           </div>
         </AppDialogContent>
       ) : null}

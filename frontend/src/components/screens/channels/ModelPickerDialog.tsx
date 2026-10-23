@@ -113,6 +113,38 @@ export function ModelPickerDialog({
         <AppDialogContent
           className="max-w-3xl"
           title={locale === "zh-CN" ? "选择模型" : "Select models"}
+          footer={
+            <>
+              <Button type="button" variant="outline" onClick={onCancel}>
+                {locale === "zh-CN" ? "取消" : "Cancel"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  onConfirmAll(
+                    filteredModelGroups.map((group) => group.model_name),
+                  )
+                }
+                disabled={!filteredModelGroups.length}
+              >
+                {searchTargetsModels
+                  ? locale === "zh-CN"
+                    ? "加入匹配模型"
+                    : "Add matched models"
+                  : locale === "zh-CN"
+                    ? "加入全部模型"
+                    : "Add all models"}
+              </Button>
+              <Button
+                type="button"
+                onClick={onConfirm}
+                disabled={!pickerSelectedModelKeys.length}
+              >
+                {locale === "zh-CN" ? "加入模型" : "Add models"}
+              </Button>
+            </>
+          }
         >
           <div className="grid gap-4 pt-2">
             <div className="space-y-2 border-b pb-3">
@@ -201,36 +233,6 @@ export function ModelPickerDialog({
                       : "No models fetched."}
                 </div>
               )}
-            </div>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-              <Button type="button" variant="outline" onClick={onCancel}>
-                {locale === "zh-CN" ? "取消" : "Cancel"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  onConfirmAll(
-                    filteredModelGroups.map((group) => group.model_name),
-                  )
-                }
-                disabled={!filteredModelGroups.length}
-              >
-                {searchTargetsModels
-                  ? locale === "zh-CN"
-                    ? "加入匹配模型"
-                    : "Add matched models"
-                  : locale === "zh-CN"
-                    ? "加入全部模型"
-                    : "Add all models"}
-              </Button>
-              <Button
-                type="button"
-                onClick={onConfirm}
-                disabled={!pickerSelectedModelKeys.length}
-              >
-                {locale === "zh-CN" ? "加入模型" : "Add models"}
-              </Button>
             </div>
           </div>
         </AppDialogContent>

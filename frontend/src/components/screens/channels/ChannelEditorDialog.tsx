@@ -148,8 +148,41 @@ export function ChannelEditorDialog({
               ? "新建渠道"
               : "Create channel"
         }
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={closeEditor}
+              disabled={savingChannel || isRateSyncing}
+            >
+              {locale === "zh-CN" ? "取消" : "Cancel"}
+            </Button>
+            <Button
+              type="submit"
+              form="channel-editor-form"
+              disabled={savingChannel || isRateSyncing}
+            >
+              {savingChannel ? (
+                <RefreshCcw data-icon="inline-start" className="animate-spin" />
+              ) : null}
+              {savingChannel
+                ? locale === "zh-CN"
+                  ? "正在保存..."
+                  : "Saving..."
+                : editingSiteId
+                  ? locale === "zh-CN"
+                    ? "保存渠道"
+                    : "Save channel"
+                  : locale === "zh-CN"
+                    ? "创建渠道"
+                    : "Create channel"}
+            </Button>
+          </>
+        }
       >
         <form
+          id="channel-editor-form"
           className="grid gap-5"
           onSubmit={submit}
           onKeyDown={(event) => {
@@ -216,35 +249,6 @@ export function ChannelEditorDialog({
                   onClearModels={clearModels}
                 />
               </section>
-            </div>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={closeEditor}
-                disabled={savingChannel}
-              >
-                {locale === "zh-CN" ? "取消" : "Cancel"}
-              </Button>
-              <Button type="submit" disabled={savingChannel}>
-                {savingChannel ? (
-                  <RefreshCcw
-                    data-icon="inline-start"
-                    className="animate-spin"
-                  />
-                ) : null}
-                {savingChannel
-                  ? locale === "zh-CN"
-                    ? "正在保存..."
-                    : "Saving..."
-                  : editingSiteId
-                    ? locale === "zh-CN"
-                      ? "保存渠道"
-                      : "Save channel"
-                    : locale === "zh-CN"
-                      ? "创建渠道"
-                      : "Create channel"}
-              </Button>
             </div>
           </fieldset>
         </form>

@@ -119,8 +119,32 @@ export function GroupEditorDialog(props: GroupEditorDialogProps) {
                 ? "新建模型组"
                 : "Create group"
           }
+          footer={
+            <>
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => setDialogOpen(false)}
+              >
+                {locale === "zh-CN" ? "取消" : "Cancel"}
+              </Button>
+              <Button type="submit" form="model-group-form">
+                {editingId
+                  ? locale === "zh-CN"
+                    ? "保存模型组"
+                    : "Save group"
+                  : locale === "zh-CN"
+                    ? "创建模型组"
+                    : "Create group"}
+              </Button>
+            </>
+          }
         >
-          <form className="flex flex-col gap-4 pr-1" onSubmit={submit}>
+          <form
+            id="model-group-form"
+            className="flex flex-col gap-4 pr-1"
+            onSubmit={submit}
+          >
             <div className="flex flex-col gap-4">
               <ModelGroupSettings
                 locale={locale}
@@ -192,26 +216,6 @@ export function GroupEditorDialog(props: GroupEditorDialogProps) {
               ) : null}
             </div>
 
-            <div className="sticky bottom-0 z-10 -mx-1 mt-4 shrink-0 border-t bg-background/95 px-1 pt-4 pb-1 backdrop-blur supports-[backdrop-filter]:bg-background/85">
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-                <Button
-                  variant="outline"
-                  type="button"
-                  onClick={() => setDialogOpen(false)}
-                >
-                  {locale === "zh-CN" ? "取消" : "Cancel"}
-                </Button>
-                <Button type="submit">
-                  {editingId
-                    ? locale === "zh-CN"
-                      ? "保存模型组"
-                      : "Save group"
-                    : locale === "zh-CN"
-                      ? "创建模型组"
-                      : "Create group"}
-                </Button>
-              </div>
-            </div>
           </form>
         </AppDialogContent>
       </Dialog>
@@ -223,8 +227,16 @@ export function GroupEditorDialog(props: GroupEditorDialogProps) {
         <AppDialogContent
           className="max-w-2xl"
           title={locale === "zh-CN" ? "更多设置" : "More settings"}
+          footer={
+            <Button
+              type="button"
+              onClick={() => setAdvancedSettingsOpen(false)}
+            >
+              {locale === "zh-CN" ? "完成" : "Done"}
+            </Button>
+          }
         >
-          <div className="grid max-h-[75dvh] gap-5 overflow-y-auto pr-1">
+          <div className="grid gap-5 pr-1">
             <HeaderRows
               title={locale === "zh-CN" ? "请求头" : "Request headers"}
               headers={form.headers}
@@ -282,14 +294,6 @@ export function GroupEditorDialog(props: GroupEditorDialogProps) {
                 }
               />
             ) : null}
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                onClick={() => setAdvancedSettingsOpen(false)}
-              >
-                {locale === "zh-CN" ? "完成" : "Done"}
-              </Button>
-            </div>
           </div>
         </AppDialogContent>
       </Dialog>
@@ -320,12 +324,8 @@ export function DeleteGroupDialog({
             ? "删除后，该模型组名称将不再参与路由匹配。"
             : "This group will no longer participate in routing."
         }
-      >
-        <div className="grid gap-5 overflow-y-auto pr-1">
-          <div className="rounded-md border bg-muted/30 p-4">
-            <strong>{deleteTarget?.name}</strong>
-          </div>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+        footer={
+          <>
             <Button
               variant="outline"
               type="button"
@@ -347,6 +347,12 @@ export function DeleteGroupDialog({
                   ? "确认删除"
                   : "Delete"}
             </Button>
+          </>
+        }
+      >
+        <div className="grid gap-5 pr-1">
+          <div className="rounded-md border bg-muted/30 p-4">
+            <strong>{deleteTarget?.name}</strong>
           </div>
         </div>
       </AppDialogContent>

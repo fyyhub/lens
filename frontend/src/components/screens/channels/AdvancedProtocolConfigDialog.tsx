@@ -45,7 +45,7 @@ export function AdvancedProtocolConfigDialog({
         className="max-w-3xl"
         title={titleForLocale(locale, "更多设置", "More settings")}
       >
-        <div className="grid max-h-[75dvh] gap-4 overflow-y-auto pr-1">
+        <div className="grid gap-4 pr-1">
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="protocol-proxy-mode">

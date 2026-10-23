@@ -169,11 +169,13 @@ export function AppDialogContent({
   className,
   title,
   description,
+  footer,
 }: {
   children: React.ReactNode;
   className?: string;
   title: React.ReactNode;
   description?: React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   return (
     <DialogContent
@@ -190,6 +192,14 @@ export function AppDialogContent({
       <div className="hide-scrollbar -mx-1 mt-2 min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-1">
         {children}
       </div>
+      {footer ? (
+        <div
+          data-slot="dialog-footer"
+          className="-mx-4 -mt-4 -mb-4 flex shrink-0 flex-col-reverse gap-2 border-t bg-muted/50 p-4 sm:-mx-6 sm:-mt-6 sm:-mb-6 sm:flex-row sm:justify-end sm:gap-3 sm:p-6"
+        >
+          {footer}
+        </div>
+      ) : null}
     </DialogContent>
   );
 }

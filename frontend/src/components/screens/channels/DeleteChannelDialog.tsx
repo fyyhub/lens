@@ -35,12 +35,8 @@ export function DeleteChannelDialog({
             ? "删除后该渠道下的协议配置、模型和模型组成员会一起移除。"
             : "Protocol configs, models, and group members under this channel will be removed together."
         }
-      >
-        <div className="grid gap-5">
-          <div className="rounded-md border bg-muted/30 p-4">
-            <strong className="text-foreground">{deleteTarget?.name}</strong>
-          </div>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+        footer={
+          <>
             <Button
               type="button"
               variant="outline"
@@ -62,6 +58,12 @@ export function DeleteChannelDialog({
                   ? "确认删除"
                   : "Delete"}
             </Button>
+          </>
+        }
+      >
+        <div className="grid gap-5">
+          <div className="rounded-md border bg-muted/30 p-4">
+            <strong className="text-foreground">{deleteTarget?.name}</strong>
           </div>
         </div>
       </AppDialogContent>
