@@ -246,12 +246,12 @@ export function ChannelBasicInfoSection({
             canSyncRates={canSyncRates}
             locale={locale}
             onSyncingChange={onRateSyncingChange}
-            onAdd={(credential) =>
-              setForm((current) => ({
-                ...current,
-                credentials: [...current.credentials, credential],
-              }))
-            }
+        onAdd={(credential) =>
+          setForm((current) => ({
+            ...current,
+            credentials: [credential, ...current.credentials],
+          }))
+        }
             onAddMany={addCredentials}
             onUpdate={updateCredential}
             onRemove={removeCredential}

@@ -167,11 +167,7 @@ export function ChannelCredentialSection({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => {
-              // A single add targets the list end; expand so it stays visible.
-              setIsListExpanded(true);
-              onAdd(emptyCredential());
-            }}
+            onClick={() => onAdd(emptyCredential())}
           >
             <Plus data-icon="inline-start" />
             {locale === "zh-CN" ? "添加" : "Add"}
