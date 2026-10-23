@@ -73,6 +73,34 @@ export function ChannelModelSyncDialog({
         <AppDialogContent
           className="max-w-2xl"
           title={locale === "zh-CN" ? "同步预览" : "Sync preview"}
+          footer={
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={syncing}
+              >
+                {locale === "zh-CN" ? "取消" : "Cancel"}
+              </Button>
+              <Button
+                type="button"
+                onClick={onConfirm}
+                disabled={
+                  syncing ||
+                  !result ||
+                  result.eligible_target_count === 0 ||
+                  !hasChanges
+                }
+              >
+                <RefreshCcw
+                  data-icon="inline-start"
+                  className={syncing ? "animate-spin" : undefined}
+                />
+                {locale === "zh-CN" ? "确认同步" : "Confirm sync"}
+              </Button>
+            </>
+          }
         >
           <div className="grid gap-4">
             {result ? (
@@ -206,32 +234,6 @@ export function ChannelModelSyncDialog({
               </div>
             ) : null}
 
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={syncing}
-              >
-                {locale === "zh-CN" ? "取消" : "Cancel"}
-              </Button>
-              <Button
-                type="button"
-                onClick={onConfirm}
-                disabled={
-                  syncing ||
-                  !result ||
-                  result.eligible_target_count === 0 ||
-                  !hasChanges
-                }
-              >
-                <RefreshCcw
-                  data-icon="inline-start"
-                  className={syncing ? "animate-spin" : undefined}
-                />
-                {locale === "zh-CN" ? "确认同步" : "Confirm sync"}
-              </Button>
-            </div>
           </div>
         </AppDialogContent>
       ) : null}

@@ -86,6 +86,18 @@ export function BatchCredentialDialog({
             ? "每行一个密钥，可在密钥后用逗号或空格附加备注；与现有或前文重复的密钥会自动跳过。"
             : "One key per line. Append a remark after the key with a comma or space. Keys already listed above or repeated here are skipped."
         }
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={closeDialog}>
+              {isZh ? "取消" : "Cancel"}
+            </Button>
+            <Button type="button" onClick={confirmBatch} disabled={!readyCount}>
+              {isZh
+                ? `添加 ${readyCount} 个密钥`
+                : `Add ${readyCount} ${readyCount === 1 ? "key" : "keys"}`}
+            </Button>
+          </>
+        }
       >
         <div className="grid gap-4">
           <FieldGroup>
@@ -108,16 +120,6 @@ export function BatchCredentialDialog({
               ) : null}
             </Field>
           </FieldGroup>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
-            <Button type="button" variant="outline" onClick={closeDialog}>
-              {isZh ? "取消" : "Cancel"}
-            </Button>
-            <Button type="button" onClick={confirmBatch} disabled={!readyCount}>
-              {isZh
-                ? `添加 ${readyCount} 个密钥`
-                : `Add ${readyCount} ${readyCount === 1 ? "key" : "keys"}`}
-            </Button>
-          </div>
         </div>
       </AppDialogContent>
     </Dialog>

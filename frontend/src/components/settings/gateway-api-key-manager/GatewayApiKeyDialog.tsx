@@ -3,7 +3,7 @@ import { toast } from "sonner";
 
 import { SettingsHint } from "@/components/settings/SettingsSectionCard";
 import { Button } from "@/components/ui/Button";
-import { AppDialogContent, Dialog, DialogFooter } from "@/components/ui/Dialog";
+import { AppDialogContent, Dialog } from "@/components/ui/Dialog";
 import {
   Field,
   FieldContent,
@@ -230,6 +230,22 @@ export function GatewayApiKeyDialog({
           editingKeyId ? "编辑 API Key" : "创建 API Key",
           editingKeyId ? "Edit API key" : "Create API key",
         )}
+        footer={
+          <>
+            <Button type="button" variant="outline" onClick={onClose}>
+              {titleForLocale(locale, "取消", "Cancel")}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void submit()}
+              disabled={submitting}
+            >
+              {submitting
+                ? titleForLocale(locale, "保存中...", "Saving...")
+                : titleForLocale(locale, "保存", "Save")}
+            </Button>
+          </>
+        }
       >
         <div className="flex flex-col gap-4">
           <FieldGroup>
@@ -269,21 +285,6 @@ export function GatewayApiKeyDialog({
               }}
             />
           </FieldGroup>
-
-          <DialogFooter className="mx-0 mb-0 rounded-none border-0 bg-transparent p-0 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              {titleForLocale(locale, "取消", "Cancel")}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void submit()}
-              disabled={submitting}
-            >
-              {submitting
-                ? titleForLocale(locale, "保存中...", "Saving...")
-                : titleForLocale(locale, "保存", "Save")}
-            </Button>
-          </DialogFooter>
         </div>
       </AppDialogContent>
     </Dialog>

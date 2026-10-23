@@ -10,14 +10,7 @@ import {
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/Dialog";
+import { AppDialogContent, Dialog } from "@/components/ui/Dialog";
 import {
   Item,
   ItemContent,
@@ -47,19 +40,37 @@ export function ConfigImportConfirmDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {titleForLocale(locale, "确认导入备份", "Confirm backup import")}
-          </DialogTitle>
-          <DialogDescription>
-            {titleForLocale(
-              locale,
-              "当前实例中的相关配置会被备份文件覆盖，请确认文件内容无误后继续。",
-              "The related configuration in this instance will be overwritten by the backup file.",
-            )}
-          </DialogDescription>
-        </DialogHeader>
+      <AppDialogContent
+        title={titleForLocale(locale, "确认导入备份", "Confirm backup import")}
+        description={titleForLocale(
+          locale,
+          "当前实例中的相关配置会被备份文件覆盖，请确认文件内容无误后继续。",
+          "The related configuration in this instance will be overwritten by the backup file.",
+        )}
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isImporting}
+            >
+              {titleForLocale(locale, "取消", "Cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={onConfirm}
+              disabled={isImporting}
+            >
+              <Upload data-icon="inline-start" />
+              {isImporting
+                ? titleForLocale(locale, "导入中...", "Importing...")
+                : titleForLocale(locale, "确认覆盖导入", "Confirm import")}
+            </Button>
+          </>
+        }
+      >
 
         <div className="flex flex-col gap-3">
           <Item variant="muted">
@@ -120,28 +131,7 @@ export function ConfigImportConfirmDialog({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isImporting}
-          >
-            {titleForLocale(locale, "取消", "Cancel")}
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={onConfirm}
-            disabled={isImporting}
-          >
-            <Upload data-icon="inline-start" />
-            {isImporting
-              ? titleForLocale(locale, "导入中...", "Importing...")
-              : titleForLocale(locale, "确认覆盖导入", "Confirm import")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+      </AppDialogContent>
     </Dialog>
   );
 }

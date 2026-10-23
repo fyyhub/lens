@@ -77,6 +77,19 @@ export function ModelTestDialog({
         <AppDialogContent
           className="max-w-2xl"
           title={locale === "zh-CN" ? "测试模型" : "Test model"}
+          footer={
+            <Button
+              type="button"
+              onClick={onRun}
+              disabled={!canTest || testingModel}
+            >
+              <RefreshCcw
+                data-icon="inline-start"
+                className={testingModel ? "animate-spin" : ""}
+              />
+              {locale === "zh-CN" ? "发送测试" : "Send test"}
+            </Button>
+          }
         >
           <div className="grid gap-4">
             <div className="rounded-md border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
@@ -215,19 +228,6 @@ export function ModelTestDialog({
               </div>
             ) : null}
 
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                onClick={onRun}
-                disabled={!canTest || testingModel}
-              >
-                <RefreshCcw
-                  data-icon="inline-start"
-                  className={testingModel ? "animate-spin" : ""}
-                />
-                {locale === "zh-CN" ? "发送测试" : "Send test"}
-              </Button>
-            </div>
           </div>
         </AppDialogContent>
       ) : null}
