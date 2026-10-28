@@ -179,6 +179,7 @@ export function ChannelsDialogs({
           batchTestPrompt={batchTest.batchTestPrompt}
           batchTestConcurrency={batchTest.batchTestConcurrency}
           batchTestOptions={batchTest.batchTestOptions}
+          batchTestDeselectedKeys={batchTest.batchTestDeselectedKeys}
           batchTestRows={batchTest.batchTestRows}
           isBatchModelTestRunning={batchTest.isBatchModelTestRunning}
           onOpenChange={batchTest.changeBatchModelTestOpen}
@@ -186,6 +187,10 @@ export function ChannelsDialogs({
           onPromptChange={batchTest.changeBatchTestPrompt}
           onConcurrencyChange={batchTest.setBatchTestConcurrency}
           onProtocolChange={batchTest.changeBatchTestProtocol}
+          onToggleModel={batchTest.toggleBatchTestModel}
+          onSelectAllModels={batchTest.selectAllBatchTestModels}
+          onClearModelSelection={batchTest.clearBatchTestModelSelection}
+          onRetestRow={(key) => void batchTest.retestBatchModelRow(key)}
           onRun={() => void batchTest.runBatchModelTests()}
         />
       ) : null}

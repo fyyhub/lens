@@ -3,7 +3,9 @@ import type {
   BatchModelTestOption,
   BatchModelTestRow,
 } from "@/components/model-test/batchModelTestSession";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { AppDialogContent, Dialog } from "@/components/ui/Dialog";
 import {
   Field,
@@ -22,7 +24,12 @@ import {
 } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import type { ProtocolKind } from "@/lib/api/protocols";
-import { protocolLabel } from "@/lib/protocols";
+import { cn } from "@/lib/classNames";
+import {
+  compactProtocolLabel,
+  protocolBadgeClassName,
+  protocolLabel,
+} from "@/lib/protocols";
 import { BatchModelTestResults } from "./BatchModelTestResults";
 import type { Locale } from "./channelTypes";
 
@@ -34,6 +41,7 @@ type Props = {
   batchTestPrompt: string;
   batchTestConcurrency: string;
   batchTestOptions: BatchModelTestOption[];
+  batchTestDeselectedKeys: ReadonlySet<string>;
   batchTestRows: BatchModelTestRow[];
   isBatchModelTestRunning: boolean;
   onOpenChange: (open: boolean) => void;
@@ -41,6 +49,10 @@ type Props = {
   onPromptChange: (value: string) => void;
   onConcurrencyChange: (value: string) => void;
   onProtocolChange: (key: string, protocol: ProtocolKind) => void;
+  onToggleModel: (key: string) => void;
+  onSelectAllModels: () => void;
+  onClearModelSelection: () => void;
+  onRetestRow: (key: string) => void;
   onRun: () => void;
 };
 
@@ -53,6 +65,7 @@ export function BatchModelTestDialog({
   batchTestPrompt,
   batchTestConcurrency,
   batchTestOptions,
+  batchTestDeselectedKeys,
   batchTestRows,
   isBatchModelTestRunning,
   onOpenChange,
@@ -60,14 +73,22 @@ export function BatchModelTestDialog({
   onPromptChange,
   onConcurrencyChange,
   onProtocolChange,
+  onToggleModel,
+  onSelectAllModels,
+  onClearModelSelection,
+  onRetestRow,
   onRun,
 }: Props) {
   const multiProtocolOptions = batchTestOptions.filter(
-    (item) => item.protocols.length > 1,
+    (item) =>
+      item.protocols.length > 1 && !batchTestDeselectedKeys.has(item.key),
   );
   const testableCount = batchTestOptions.length;
+  const selectedCount = batchTestOptions.filter(
+    (item) => !batchTestDeselectedKeys.has(item.key),
+  ).length;
   const canRun =
-    testableCount > 0 &&
+    selectedCount > 0 &&
     Boolean(batchTestPrompt.trim()) &&
     !isBatchModelTestRunning;
   return (
@@ -80,9 +101,7 @@ export function BatchModelTestDialog({
             <Button type="button" onClick={onRun} disabled={!canRun}>
               <RefreshCcw
                 data-icon="inline-start"
-                className={
-                  isBatchModelTestRunning ? "animate-spin" : undefined
-                }
+                className={isBatchModelTestRunning ? "animate-spin" : undefined}
               />
               {locale === "zh-CN" ? "开始测试" : "Start test"}
             </Button>
@@ -91,9 +110,78 @@ export function BatchModelTestDialog({
           <div className="grid gap-4">
             <div className="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
               {locale === "zh-CN"
-                ? `将测试 ${testableCount} 个可用模型`
-                : `${testableCount} testable models`}
+                ? `将测试 ${selectedCount} 个模型（共 ${testableCount} 个可用）`
+                : `Testing ${selectedCount} of ${testableCount} available models`}
             </div>
+
+            <section className="grid gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-sm font-medium">
+                  {locale === "zh-CN" ? "测试模型" : "Models"}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {locale === "zh-CN"
+                      ? `已选 ${selectedCount} / ${testableCount}`
+                      : `${selectedCount} / ${testableCount} selected`}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    onClick={onSelectAllModels}
+                    disabled={
+                      isBatchModelTestRunning || selectedCount === testableCount
+                    }
+                  >
+                    {locale === "zh-CN" ? "全选" : "Select all"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="xs"
+                    onClick={onClearModelSelection}
+                    disabled={isBatchModelTestRunning || selectedCount === 0}
+                  >
+                    {locale === "zh-CN" ? "清空" : "Clear"}
+                  </Button>
+                </div>
+              </div>
+              <div className="max-h-56 overflow-y-auto rounded-md border">
+                {batchTestOptions.map((item, index) => {
+                  const checkboxId = `batch-model-option-${index}`;
+                  return (
+                    <label
+                      key={item.key}
+                      htmlFor={checkboxId}
+                      className="flex cursor-pointer items-center gap-2 border-b px-3 py-2 last:border-b-0 hover:bg-muted/40"
+                    >
+                      <Checkbox
+                        id={checkboxId}
+                        checked={!batchTestDeselectedKeys.has(item.key)}
+                        onCheckedChange={() => onToggleModel(item.key)}
+                        disabled={isBatchModelTestRunning}
+                      />
+                      <span className="min-w-0 flex-1 truncate text-sm">
+                        {item.modelName}
+                      </span>
+                      <span className="hidden max-w-[40%] truncate text-xs text-muted-foreground sm:block">
+                        {item.credentialName}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "shrink-0 text-xs",
+                          protocolBadgeClassName(item.selectedProtocol),
+                        )}
+                      >
+                        {compactProtocolLabel(item.selectedProtocol)}
+                      </Badge>
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
 
             <FieldGroup>
               <div className="grid gap-3 sm:grid-cols-[220px_minmax(0,1fr)]">
@@ -191,7 +279,12 @@ export function BatchModelTestDialog({
               </FieldSet>
             ) : null}
 
-            <BatchModelTestResults rows={batchTestRows} locale={locale} />
+            <BatchModelTestResults
+              rows={batchTestRows}
+              locale={locale}
+              isRunning={isBatchModelTestRunning}
+              onRetest={onRetestRow}
+            />
           </div>
         </AppDialogContent>
       ) : null}
