@@ -1,5 +1,6 @@
 import { type Dispatch, type SetStateAction, useMemo } from "react";
 import type { ModelGroup } from "@/lib/api/groups";
+import { useRouterSnapshot } from "@/lib/credentialHealth";
 import type { FormItem, FormState, MemberStatusFilter } from "./groupTypes";
 import { foldGroupMembers, groupFoldedMembersByChannel } from "./groupView";
 import {
@@ -68,14 +69,21 @@ export function useGroupMembers(
   setForm: Dispatch<SetStateAction<FormState>>,
   memberStatusFilter: MemberStatusFilter,
 ) {
+  const { credentialHealthIndex } = useRouterSnapshot();
   const foldedMembers = useMemo(
     () => foldGroupMembers(form.items, evaluatedItems),
     [evaluatedItems, form.items],
   );
   const visibleFoldedMembers = useMemo(() => {
     return foldedMembers.flatMap((member, index) => {
+      const credHealth = credentialHealthIndex.byCredentialId.get(
+        member.credential_id,
+      );
+      const isCooled = Boolean(credHealth && !credHealth.available);
       const hasProblem =
-        member.invalid_item_count > 0 || member.unavailable_item_count > 0;
+        member.invalid_item_count > 0 ||
+        member.unavailable_item_count > 0 ||
+        isCooled;
       const isVisible =
         memberStatusFilter === "all" ||
         (memberStatusFilter === "enabled" && member.ready_item_count > 0) ||
@@ -84,7 +92,7 @@ export function useGroupMembers(
         (memberStatusFilter === "problem" && hasProblem);
       return isVisible ? [{ member, index }] : [];
     });
-  }, [foldedMembers, memberStatusFilter]);
+  }, [credentialHealthIndex.byCredentialId, foldedMembers, memberStatusFilter]);
   const channelGroups = useMemo(
     () =>
       groupFoldedMembersByChannel(

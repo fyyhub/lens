@@ -17,6 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/Popover";
+import type { AggregatedCredentialHealth } from "@/lib/credentialHealth";
 import { ChannelBaseUrlSection } from "./ChannelBaseUrlSection";
 import { ChannelCredentialSection } from "./ChannelCredentialSection";
 import type {
@@ -32,6 +33,7 @@ type Props = {
   availableTags: string[];
   siteId: string | null;
   canSyncRates: boolean;
+  credentialHealthById: ReadonlyMap<string, AggregatedCredentialHealth>;
   onRateSyncingChange: (isSyncing: boolean) => void;
   setForm: Dispatch<SetStateAction<FormState>>;
   addBaseUrl: () => void;
@@ -43,6 +45,7 @@ type Props = {
     patch: Partial<FormCredential>,
   ) => void;
   removeCredential: (index: number) => void;
+  removeCredentials: (credentialIds: string[]) => void;
 };
 
 /** Renders the channel name, base URL, and credential fields. */
@@ -52,6 +55,7 @@ export function ChannelBasicInfoSection({
   availableTags,
   siteId,
   canSyncRates,
+  credentialHealthById,
   onRateSyncingChange,
   setForm,
   addBaseUrl,
@@ -60,6 +64,7 @@ export function ChannelBasicInfoSection({
   addCredentials,
   updateCredential,
   removeCredential,
+  removeCredentials,
 }: Props) {
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [tagInput, setTagInput] = useState("");
@@ -244,17 +249,19 @@ export function ChannelBasicInfoSection({
             protocolConfigs={form.protocolConfigs}
             siteId={siteId}
             canSyncRates={canSyncRates}
+            credentialHealthById={credentialHealthById}
             locale={locale}
             onSyncingChange={onRateSyncingChange}
-        onAdd={(credential) =>
-          setForm((current) => ({
-            ...current,
-            credentials: [credential, ...current.credentials],
-          }))
-        }
+            onAdd={(credential) =>
+              setForm((current) => ({
+                ...current,
+                credentials: [credential, ...current.credentials],
+              }))
+            }
             onAddMany={addCredentials}
             onUpdate={updateCredential}
             onRemove={removeCredential}
+            onRemoveCredentials={removeCredentials}
           />
         </div>
       </FieldGroup>

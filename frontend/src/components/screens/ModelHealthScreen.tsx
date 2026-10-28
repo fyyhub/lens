@@ -1,7 +1,8 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, KeyRound, TriangleAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
+import { Badge } from "@/components/ui/Badge";
 import {
   Pagination,
   PaginationContent,
@@ -27,6 +28,12 @@ import { useAppTimeZone } from "@/hooks/useAppTimeZone";
 import { apiRequest } from "@/lib/api/client";
 import type { HealthItem, HealthSummary, HealthTier } from "@/lib/api/sites";
 import { cn } from "@/lib/classNames";
+import {
+  formatCredentialCooldownSummary,
+  formatHealthCredentialLabel,
+  type SiteRuntimeCredentialSummary,
+  useRouterSnapshot,
+} from "@/lib/credentialHealth";
 import { useI18n } from "@/lib/I18nContext";
 
 type HealthMode = "model" | "channel";
@@ -190,10 +197,12 @@ function HealthTimeline({
 
 function HealthCard({
   item,
+  credentialSummary,
   locale,
   timeZone,
 }: {
   item: HealthItem;
+  credentialSummary?: SiteRuntimeCredentialSummary;
   locale: "zh-CN" | "en-US";
   timeZone?: string;
 }) {
@@ -202,11 +211,14 @@ function HealthCard({
   const successRate = item.total_count
     ? `${((item.success_count / item.total_count) * 100).toFixed(2)}%`
     : "-";
+  const cooledCount = credentialSummary?.cooled_key_count ?? 0;
+  const totalKeys = credentialSummary?.total_key_count ?? 0;
+  const availableKeys = credentialSummary?.available_key_count ?? 0;
 
   return (
     <article className="grid gap-4 rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex min-w-0 items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h2 className="truncate text-base font-semibold">{item.name}</h2>
           <span
             className={cn(
@@ -216,6 +228,28 @@ function HealthCard({
           >
             {state.label}
           </span>
+          {cooledCount > 0 ? (
+            <Badge
+              variant={availableKeys === 0 ? "destructive" : "outline"}
+              className={
+                availableKeys > 0
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  : undefined
+              }
+            >
+              <TriangleAlert data-icon="inline-start" />
+              {isChineseLocale
+                ? `密钥 ${availableKeys}/${totalKeys} 可用 · ${cooledCount} 冷却`
+                : `Keys ${availableKeys}/${totalKeys} available · ${cooledCount} cooling`}
+            </Badge>
+          ) : totalKeys > 1 ? (
+            <Badge variant="secondary" className="gap-1">
+              <KeyRound className="size-3" />
+              {isChineseLocale
+                ? `${totalKeys} 个密钥正常`
+                : `${totalKeys} keys healthy`}
+            </Badge>
+          ) : null}
         </div>
         <div className="shrink-0 text-right text-sm">
           <span className="font-semibold tabular-nums">{successRate}</span>
@@ -229,6 +263,38 @@ function HealthCard({
           </span>
         </div>
       </div>
+      {cooledCount > 0 && credentialSummary ? (
+        <div className="grid gap-1.5 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs">
+          <div className="font-medium text-destructive">
+            {isChineseLocale
+              ? "运行时冷却/报错密钥（路由已自动跳过）"
+              : "Runtime cooling / failed keys (automatically skipped by router)"}
+          </div>
+          <div className="grid gap-1">
+            {credentialSummary.cooled_credentials.map((cred) => (
+              <div
+                key={cred.credential_id}
+                className="flex flex-wrap items-baseline justify-between gap-2"
+              >
+                <span className="font-medium text-foreground">
+                  {formatHealthCredentialLabel(cred, locale)} ·{" "}
+                  <span className="text-destructive">
+                    {formatCredentialCooldownSummary(cred, locale)}
+                  </span>
+                </span>
+                {cred.last_error ? (
+                  <span
+                    className="max-w-full truncate text-muted-foreground"
+                    title={cred.last_error}
+                  >
+                    {cred.last_error}
+                  </span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <HealthTimeline item={item} locale={locale} timeZone={timeZone} />
     </article>
   );
@@ -243,6 +309,7 @@ export function ModelHealthScreen() {
   const [search, setSearch] = useState("");
   const [offset, setOffset] = useState(0);
   const debouncedSearch = useDebouncedValue(search.trim(), SEARCH_DEBOUNCE_MS);
+  const { credentialHealthIndex } = useRouterSnapshot(mode === "channel");
   const healthQuery = useQuery({
     queryKey: ["model-health", mode, hours, debouncedSearch, offset],
     queryFn: () => {
@@ -359,6 +426,11 @@ export function ModelHealthScreen() {
               <HealthCard
                 key={item.name}
                 item={item}
+                credentialSummary={
+                  mode === "channel"
+                    ? credentialHealthIndex.byChannelName.get(item.name)
+                    : undefined
+                }
                 locale={locale}
                 timeZone={timeZone}
               />

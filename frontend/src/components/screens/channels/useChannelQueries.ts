@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { apiRequest } from "@/lib/api/client";
 import type { ProtocolKind } from "@/lib/api/protocols";
 import type { Site } from "@/lib/api/sites";
+import { useRouterSnapshot } from "@/lib/credentialHealth";
 import {
   isSiteProtocolConfigEnabled,
   siteEndpointSummary,
@@ -35,23 +36,34 @@ export function useChannelQueries(locale: Locale) {
     queryFn: () => apiRequest<Site[]>("/admin/sites"),
     staleTime: 2 * 60_000,
   });
+  const { credentialHealthIndex } = useRouterSnapshot();
   const siteRows = useMemo<SiteRow[]>(
     () =>
-      (sites ?? []).map((site) => ({
-        ...site,
-        enabled_protocol_channel_count: site.enabled
-          ? site.protocols.reduce(
-              (total, protocolConfig) =>
-                isSiteProtocolConfigEnabled(site, protocolConfig)
-                  ? total + protocolConfig.protocols.length
-                  : total,
-              0,
-            )
-          : 0,
-        model_count: siteModelCount(site),
-        endpoint_summary: siteEndpointSummary(site, locale),
-      })),
-    [sites, locale],
+      (sites ?? []).map((site) => {
+        const runtimeSummary = credentialHealthIndex.bySiteId.get(site.id);
+        const enabledCredentials = site.credentials.filter(
+          (item) => item.enabled,
+        );
+        return {
+          ...site,
+          enabled_protocol_channel_count: site.enabled
+            ? site.protocols.reduce(
+                (total, protocolConfig) =>
+                  isSiteProtocolConfigEnabled(site, protocolConfig)
+                    ? total + protocolConfig.protocols.length
+                    : total,
+                0,
+              )
+            : 0,
+          model_count: siteModelCount(site),
+          endpoint_summary: siteEndpointSummary(site, locale),
+          cooled_key_count: runtimeSummary?.cooled_key_count ?? 0,
+          available_key_count:
+            runtimeSummary?.available_key_count ?? enabledCredentials.length,
+          cooled_credentials: runtimeSummary?.cooled_credentials ?? [],
+        };
+      }),
+    [credentialHealthIndex.bySiteId, sites, locale],
   );
   const tags = useMemo(
     () =>
@@ -120,6 +132,7 @@ export function useChannelQueries(locale: Locale) {
   async function invalidateChannelData() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["sites"] }),
+      queryClient.invalidateQueries({ queryKey: ["router-snapshot"] }),
       queryClient.invalidateQueries({ queryKey: ["group-candidates"] }),
       queryClient.invalidateQueries({ queryKey: ["groups"] }),
       queryClient.invalidateQueries({ queryKey: ["model-groups"] }),
@@ -141,6 +154,7 @@ export function useChannelQueries(locale: Locale) {
 
   return {
     queryClient,
+    credentialHealthIndex,
     sitesError,
     sitesIsError,
     isLoading,
@@ -185,6 +199,7 @@ import type {
 export type AggregatedModelMember = {
   /** Per-credential key matching protocolConfigModelKey semantics. */
   key: string;
+  credentialId: string;
   credentialName: string;
   source: SiteModelInput["source"];
   isTargetOnly: boolean;
@@ -274,6 +289,7 @@ export function useAggregatedModels(
         }
         group.members.push({
           key: memberKey,
+          credentialId,
           credentialName: credentialName(credentialId),
           source,
           isTargetOnly,

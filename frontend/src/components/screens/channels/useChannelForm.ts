@@ -383,6 +383,44 @@ export function useChannelForm(locale: Locale) {
       };
     });
   }
+  function removeCredentials(credentialIdsToRemove: string[]) {
+    const requestedSet = new Set(credentialIdsToRemove);
+    if (!requestedSet.size) return;
+    setForm((current) => {
+      if (current.credentials.length <= 1) return current;
+      let credentials = current.credentials.filter(
+        (item) => !requestedSet.has(item.id),
+      );
+      const removedIds = new Set(requestedSet);
+      if (credentials.length === 0 && current.credentials[0]) {
+        // Retain at least one credential so the channel's model templates are not lost.
+        const retained = current.credentials[0];
+        credentials = [retained];
+        removedIds.delete(retained.id);
+      }
+      if (credentials.length === current.credentials.length) return current;
+      return {
+        ...current,
+        credentials,
+        protocolConfigs: current.protocolConfigs.map((config) => {
+          const ids = protocolConfigSelectedCredentialIds(config).filter(
+            (id) => !removedIds.has(id),
+          );
+          return {
+            ...config,
+            credential_ids:
+              ids.length || !credentials[0] ? ids : [credentials[0].id],
+            models: config.models.filter(
+              (model) => !removedIds.has(model.credential_id),
+            ),
+            sync_targets: config.sync_targets.filter(
+              (syncTarget) => !removedIds.has(syncTarget.credential_id),
+            ),
+          };
+        }),
+      };
+    });
+  }
   function addCredentials(newCredentials: FormCredential[]) {
     setForm((current) => applyNewCredentials(current, newCredentials));
   }
@@ -660,6 +698,7 @@ export function useChannelForm(locale: Locale) {
     updateCredential,
     addCredentials,
     removeCredential,
+    removeCredentials,
     updateProtocolConfig,
     updateModelProtocols,
     updateModelSource,

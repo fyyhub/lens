@@ -1,4 +1,5 @@
 import type { Dispatch, SetStateAction } from "react";
+import type { AggregatedCredentialHealth } from "@/lib/credentialHealth";
 import { lazyComponent } from "@/lib/lazyComponent";
 import type { Locale } from "./channelTypes";
 import type {
@@ -61,6 +62,7 @@ type Props = {
   batchTest: ReturnType<typeof useBatchModelTest>;
   modelGroups: ReturnType<typeof useModelGroupEnsure>;
   overviewModels: ReturnType<typeof useAggregatedModels>;
+  credentialHealthById: ReadonlyMap<string, AggregatedCredentialHealth>;
   advancedConfigIndex: number | null;
   setAdvancedConfigIndex: Dispatch<SetStateAction<number | null>>;
 };
@@ -77,6 +79,7 @@ export function ChannelsDialogs({
   batchTest,
   modelGroups,
   overviewModels,
+  credentialHealthById,
   advancedConfigIndex,
   setAdvancedConfigIndex,
 }: Props) {
@@ -97,6 +100,7 @@ export function ChannelsDialogs({
           testingModel={modelTest.testingModel}
           savingChannel={modelGroups.isEnsuringModelGroups}
           overviewModels={overviewModels}
+          credentialHealthById={credentialHealthById}
           modelTestOptionByKey={modelTest.modelTestOptionByKey}
           setIsDialogOpen={editor.setIsDialogOpen}
           setEditingSiteId={editor.setEditingSiteId}
@@ -109,6 +113,7 @@ export function ChannelsDialogs({
           updateCredential={editor.updateCredential}
           addCredentials={editor.addCredentials}
           removeCredential={editor.removeCredential}
+          removeCredentials={editor.removeCredentials}
           addProtocolConfig={editor.addProtocolConfig}
           updateProtocolConfig={editor.updateProtocolConfig}
           addManualProtocolConfigModel={picker.addManualProtocolConfigModel}

@@ -6,7 +6,11 @@ from .validation import StrictBaseModel
 
 class ChannelCredentialHealth(StrictBaseModel):
     credential_id: str
+    credential_name: str = ""
+    credential_number: int = 0
     consecutive_failures: int = 0
+    last_error: str | None = None
+    last_error_category: str | None = None
     cooled_until: float = 0.0
     cooldown_remaining_seconds: int = 0
     last_cooldown_seconds: int = 0
@@ -27,6 +31,8 @@ class ModelHealth(StrictBaseModel):
 
 class ChannelHealth(StrictBaseModel):
     channel_id: str
+    site_id: str = ""
+    channel_name: str = ""
     consecutive_failures: int = 0
     last_error: str | None = None
     last_error_category: str | None = None

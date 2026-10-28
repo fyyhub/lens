@@ -132,6 +132,52 @@ export type HealthSummary = {
   items: HealthItem[];
   next_offset: number | null;
 };
+export type ChannelCredentialHealth = {
+  credential_id: string;
+  credential_name?: string;
+  credential_number?: number;
+  consecutive_failures: number;
+  last_error: string | null;
+  last_error_category: string | null;
+  cooled_until: number;
+  cooldown_remaining_seconds: number;
+  last_cooldown_seconds: number;
+  available: boolean;
+};
+export type ChannelModelHealth = {
+  model_name: string | null;
+  consecutive_failures: number;
+  last_error: string | null;
+  last_error_category: string | null;
+  cooled_until: number;
+  cooldown_remaining_seconds: number;
+  last_cooldown_seconds: number;
+  score: number;
+  available: boolean;
+};
+export type ChannelHealth = {
+  channel_id: string;
+  site_id?: string;
+  channel_name?: string;
+  consecutive_failures: number;
+  last_error: string | null;
+  last_error_category: string | null;
+  opened_until: number;
+  cooldown_remaining_seconds: number;
+  last_cooldown_seconds: number;
+  score: number;
+  available: boolean;
+  available_key_count: number;
+  cooled_key_count: number;
+  available_model_count: number;
+  cooled_model_count: number;
+  credential_health: ChannelCredentialHealth[];
+  model_health: ChannelModelHealth[];
+};
+export type RouterSnapshot = {
+  routes: unknown[];
+  health: ChannelHealth[];
+};
 export type SitePayload = {
   name: string;
   tags: string[];

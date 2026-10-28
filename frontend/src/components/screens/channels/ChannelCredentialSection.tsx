@@ -5,6 +5,8 @@ import {
   ListPlus,
   Plus,
   RefreshCcw,
+  Trash2,
+  TriangleAlert,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -22,8 +24,18 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { Switch } from "@/components/ui/Switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/Tooltip";
 import { apiRequest, getApiErrorMessage } from "@/lib/api/client";
 import type { SiteCredential } from "@/lib/api/sites";
+import { cn } from "@/lib/classNames";
+import {
+  type AggregatedCredentialHealth,
+  formatCredentialCooldownSummary,
+} from "@/lib/credentialHealth";
 import { BatchCredentialDialog } from "./BatchCredentialDialog";
 import { credentialIndexLabel, emptyCredential } from "./channelModels";
 import type {
@@ -40,12 +52,14 @@ type Props = {
   protocolConfigs: FormProtocolConfig[];
   siteId: string | null;
   canSyncRates: boolean;
+  credentialHealthById: ReadonlyMap<string, AggregatedCredentialHealth>;
   locale: Locale;
   onSyncingChange: (isSyncing: boolean) => void;
   onAdd: (credential: FormCredential) => void;
   onAddMany: (credentials: FormCredential[]) => void;
   onUpdate: (credentialId: string, patch: Partial<FormCredential>) => void;
   onRemove: (index: number) => void;
+  onRemoveCredentials: (credentialIds: string[]) => void;
 };
 
 const CLEARED_RATE_STATUS = {
@@ -66,12 +80,14 @@ export function ChannelCredentialSection({
   protocolConfigs,
   siteId,
   canSyncRates,
+  credentialHealthById,
   locale,
   onSyncingChange,
   onAdd,
   onAddMany,
   onUpdate,
   onRemove,
+  onRemoveCredentials,
 }: Props) {
   const queryClient = useQueryClient();
   const [syncingCredentialId, setSyncingCredentialId] = useState<string | null>(
@@ -80,10 +96,51 @@ export function ChannelCredentialSection({
   const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false);
   const [isListExpanded, setIsListExpanded] = useState(false);
   const isCollapsible = credentials.length > COLLAPSED_CREDENTIAL_LIMIT;
-  const visibleCredentials =
+  const indexedCredentials = credentials.map((credential, index) => ({
+    credential,
+    index,
+    health: credentialHealthById.get(credential.id),
+  }));
+  const cooledEntries = indexedCredentials.filter(
+    (entry) => entry.health && !entry.health.available,
+  );
+  // Keep cooled credentials visible even when the list is collapsed so failed
+  // keys beyond the first 5 are immediately discoverable.
+  const visibleEntries =
     isCollapsible && !isListExpanded
-      ? credentials.slice(0, COLLAPSED_CREDENTIAL_LIMIT)
-      : credentials;
+      ? indexedCredentials.filter(
+          (entry, idx) =>
+            idx < COLLAPSED_CREDENTIAL_LIMIT ||
+            Boolean(entry.health && !entry.health.available),
+        )
+      : indexedCredentials;
+
+  function removeCooledCredentials() {
+    if (!cooledEntries.length) return;
+    if (credentials.length <= 1) {
+      toast.error(
+        locale === "zh-CN"
+          ? "渠道至少需要保留 1 个密钥"
+          : "A channel must retain at least 1 API key",
+      );
+      return;
+    }
+    const idsToRemove = cooledEntries.map((entry) => entry.credential.id);
+    const willRetainFirst = idsToRemove.length >= credentials.length;
+    const removedCount = willRetainFirst
+      ? credentials.length - 1
+      : idsToRemove.length;
+    onRemoveCredentials(idsToRemove);
+    toast.success(
+      willRetainFirst
+        ? locale === "zh-CN"
+          ? `已批量移除 ${removedCount} 个失效密钥（已保留第 1 个密钥槽位供替换，保存渠道后生效）`
+          : `Removed ${removedCount} failed key(s) (kept 1 key slot; save channel to apply)`
+        : locale === "zh-CN"
+          ? `已批量移除 ${removedCount} 个失效密钥（保存渠道后生效）`
+          : `Removed ${removedCount} failed key(s) (save channel to apply)`,
+    );
+  }
 
   function addCredentialBatch(drafts: CredentialBatchDraft[]) {
     onAddMany(
@@ -149,11 +206,35 @@ export function ChannelCredentialSection({
 
   return (
     <section className="grid gap-3">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="text-sm font-medium text-foreground">
-          {locale === "zh-CN" ? "密钥" : "API Keys"}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="text-sm font-medium text-foreground">
+            {locale === "zh-CN" ? "密钥" : "API Keys"}
+          </div>
+          {cooledEntries.length > 0 ? (
+            <Badge variant="destructive" className="gap-1">
+              <TriangleAlert className="size-3" />
+              {locale === "zh-CN"
+                ? `${cooledEntries.length} 个运行时失效/冷却`
+                : `${cooledEntries.length} cooling / failed`}
+            </Badge>
+          ) : null}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {cooledEntries.length > 0 ? (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={credentials.length <= 1}
+              onClick={removeCooledCredentials}
+            >
+              <Trash2 data-icon="inline-start" />
+              {locale === "zh-CN"
+                ? `批量移除失效 (${cooledEntries.length})`
+                : `Remove failed (${cooledEntries.length})`}
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"
@@ -175,7 +256,8 @@ export function ChannelCredentialSection({
         </div>
       </div>
       <FieldGroup className="gap-3">
-        {visibleCredentials.map((credential, index) => {
+        {visibleEntries.map(({ credential, index, health }) => {
+          const isCooled = Boolean(health && !health.available);
           const availableProtocolConfigs = protocolConfigs.filter(
             (config) =>
               config.enabled &&
@@ -191,11 +273,40 @@ export function ChannelCredentialSection({
           return (
             <div
               key={credential.id}
-              className="grid min-w-0 gap-3 border-b pb-4 last:border-b-0 last:pb-0"
+              className={cn(
+                "grid min-w-0 gap-3 border-b pb-4 last:border-b-0 last:pb-0",
+                isCooled &&
+                  "rounded-lg border border-destructive/40 bg-destructive/5 p-3 last:border-b last:pb-3",
+              )}
             >
               <FieldGroup className="grid min-w-0 gap-2 md:grid-cols-[minmax(0,1.65fr)_minmax(0,0.85fr)_minmax(7rem,0.8fr)_32px_32px] md:items-end">
                 <Field>
-                  <FieldLabel>{credentialIndexLabel(index, locale)}</FieldLabel>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <FieldLabel>
+                      {credentialIndexLabel(index, locale)}
+                    </FieldLabel>
+                    {isCooled && health ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge
+                            variant="destructive"
+                            className="px-1.5 py-0 text-[10px]"
+                            tabIndex={0}
+                          >
+                            {formatCredentialCooldownSummary(health, locale)}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          align="start"
+                          className="max-w-sm"
+                        >
+                          {health.last_error ||
+                            formatCredentialCooldownSummary(health, locale)}
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : null}
+                  </div>
                   <Input
                     className="w-full min-w-0"
                     value={credential.api_key}
@@ -263,6 +374,7 @@ export function ChannelCredentialSection({
                   type="button"
                   variant="destructive"
                   size="icon"
+                  disabled={credentials.length <= 1}
                   aria-label={
                     locale === "zh-CN" ? "删除密钥" : "Remove API key"
                   }
@@ -272,6 +384,15 @@ export function ChannelCredentialSection({
                   <X />
                 </Button>
               </FieldGroup>
+              {isCooled && health?.last_error ? (
+                <div
+                  className="truncate text-xs text-destructive"
+                  title={health.last_error}
+                >
+                  {locale === "zh-CN" ? "最近报错：" : "Last error: "}
+                  {health.last_error}
+                </div>
+              ) : null}
               {credential.rate_source !== "none" ? (
                 <div className="grid min-w-0 gap-3 md:grid-cols-2">
                   <Field>
