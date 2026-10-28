@@ -64,6 +64,7 @@ export function useGroupModelTest(locale: "zh-CN" | "en-US") {
         payload,
         modelName: item.model_name,
         credentialName: target.credentialName,
+        credentialId: item.credential_id,
         protocol,
       };
     },

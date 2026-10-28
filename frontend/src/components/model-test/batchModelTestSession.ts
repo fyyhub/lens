@@ -11,6 +11,8 @@ export type BatchModelTestRow = {
   key: string;
   modelName: string;
   credentialName: string;
+  credentialId: string;
+  credentialApiKey?: string;
   protocol: ProtocolKind;
   status: BatchModelTestStatus;
   statusCode: number | null;
@@ -39,6 +41,8 @@ type PreparedBatchModelTestRequest = {
   payload: object;
   modelName: string;
   credentialName: string;
+  credentialId: string;
+  credentialApiKey?: string;
   protocol: ProtocolKind;
 };
 
@@ -170,6 +174,8 @@ export function useBatchModelTestSession<TTarget>({
           key,
           modelName: request.modelName,
           credentialName: request.credentialName,
+          credentialId: request.credentialId,
+          credentialApiKey: request.credentialApiKey,
           protocol: request.protocol,
           status: "pending",
           statusCode: null,

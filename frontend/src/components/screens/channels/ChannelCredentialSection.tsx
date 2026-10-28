@@ -34,6 +34,7 @@ import type { SiteCredential } from "@/lib/api/sites";
 import { cn } from "@/lib/classNames";
 import {
   type AggregatedCredentialHealth,
+  type BatchTestCredentialFailure,
   formatCredentialCooldownSummary,
 } from "@/lib/credentialHealth";
 import { BatchCredentialDialog } from "./BatchCredentialDialog";
@@ -53,6 +54,7 @@ type Props = {
   siteId: string | null;
   canSyncRates: boolean;
   credentialHealthById: ReadonlyMap<string, AggregatedCredentialHealth>;
+  batchTestFailures: ReadonlyMap<string, BatchTestCredentialFailure>;
   locale: Locale;
   onSyncingChange: (isSyncing: boolean) => void;
   onAdd: (credential: FormCredential) => void;
@@ -81,6 +83,7 @@ export function ChannelCredentialSection({
   siteId,
   canSyncRates,
   credentialHealthById,
+  batchTestFailures,
   locale,
   onSyncingChange,
   onAdd,
@@ -96,27 +99,40 @@ export function ChannelCredentialSection({
   const [isBatchDialogOpen, setIsBatchDialogOpen] = useState(false);
   const [isListExpanded, setIsListExpanded] = useState(false);
   const isCollapsible = credentials.length > COLLAPSED_CREDENTIAL_LIMIT;
-  const indexedCredentials = credentials.map((credential, index) => ({
-    credential,
-    index,
-    health: credentialHealthById.get(credential.id),
-  }));
-  const cooledEntries = indexedCredentials.filter(
-    (entry) => entry.health && !entry.health.available,
-  );
-  // Keep cooled credentials visible even when the list is collapsed so failed
+  const indexedCredentials = credentials.map((credential, index) => {
+    const health = credentialHealthById.get(credential.id);
+    const testFailure = batchTestFailures.get(credential.id);
+    const runtimeIssue =
+      health && !health.available
+        ? {
+            summary: formatCredentialCooldownSummary(health, locale),
+            detail:
+              health.last_error ||
+              formatCredentialCooldownSummary(health, locale),
+          }
+        : null;
+    const issue =
+      runtimeIssue ??
+      (testFailure
+        ? {
+            summary: locale === "zh-CN" ? "测试失败" : "Test failed",
+            detail: testFailure.message,
+          }
+        : null);
+    return { credential, index, issue };
+  });
+  const failedEntries = indexedCredentials.filter((entry) => entry.issue);
+  // Keep failed credentials visible even when the list is collapsed so failed
   // keys beyond the first 5 are immediately discoverable.
   const visibleEntries =
     isCollapsible && !isListExpanded
       ? indexedCredentials.filter(
-          (entry, idx) =>
-            idx < COLLAPSED_CREDENTIAL_LIMIT ||
-            Boolean(entry.health && !entry.health.available),
+          (entry, idx) => idx < COLLAPSED_CREDENTIAL_LIMIT || entry.issue,
         )
       : indexedCredentials;
 
-  function removeCooledCredentials() {
-    if (!cooledEntries.length) return;
+  function removeFailedCredentials() {
+    if (!failedEntries.length) return;
     if (credentials.length <= 1) {
       toast.error(
         locale === "zh-CN"
@@ -125,7 +141,7 @@ export function ChannelCredentialSection({
       );
       return;
     }
-    const idsToRemove = cooledEntries.map((entry) => entry.credential.id);
+    const idsToRemove = failedEntries.map((entry) => entry.credential.id);
     const willRetainFirst = idsToRemove.length >= credentials.length;
     const removedCount = willRetainFirst
       ? credentials.length - 1
@@ -211,28 +227,28 @@ export function ChannelCredentialSection({
           <div className="text-sm font-medium text-foreground">
             {locale === "zh-CN" ? "密钥" : "API Keys"}
           </div>
-          {cooledEntries.length > 0 ? (
+          {failedEntries.length > 0 ? (
             <Badge variant="destructive" className="gap-1">
               <TriangleAlert className="size-3" />
               {locale === "zh-CN"
-                ? `${cooledEntries.length} 个运行时失效/冷却`
-                : `${cooledEntries.length} cooling / failed`}
+                ? `${failedEntries.length} 个失效密钥`
+                : `${failedEntries.length} failed key(s)`}
             </Badge>
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {cooledEntries.length > 0 ? (
+          {failedEntries.length > 0 ? (
             <Button
               type="button"
               variant="destructive"
               size="sm"
               disabled={credentials.length <= 1}
-              onClick={removeCooledCredentials}
+              onClick={removeFailedCredentials}
             >
               <Trash2 data-icon="inline-start" />
               {locale === "zh-CN"
-                ? `批量移除失效 (${cooledEntries.length})`
-                : `Remove failed (${cooledEntries.length})`}
+                ? `批量移除失效 (${failedEntries.length})`
+                : `Remove failed (${failedEntries.length})`}
             </Button>
           ) : null}
           <Button
@@ -256,8 +272,8 @@ export function ChannelCredentialSection({
         </div>
       </div>
       <FieldGroup className="gap-3">
-        {visibleEntries.map(({ credential, index, health }) => {
-          const isCooled = Boolean(health && !health.available);
+        {visibleEntries.map(({ credential, index, issue }) => {
+          const hasIssue = Boolean(issue);
           const availableProtocolConfigs = protocolConfigs.filter(
             (config) =>
               config.enabled &&
@@ -275,7 +291,7 @@ export function ChannelCredentialSection({
               key={credential.id}
               className={cn(
                 "grid min-w-0 gap-3 border-b pb-4 last:border-b-0 last:pb-0",
-                isCooled &&
+                hasIssue &&
                   "rounded-lg border border-destructive/40 bg-destructive/5 p-3 last:border-b last:pb-3",
               )}
             >
@@ -285,7 +301,7 @@ export function ChannelCredentialSection({
                     <FieldLabel>
                       {credentialIndexLabel(index, locale)}
                     </FieldLabel>
-                    {isCooled && health ? (
+                    {issue ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Badge
@@ -293,7 +309,7 @@ export function ChannelCredentialSection({
                             className="px-1.5 py-0 text-[10px]"
                             tabIndex={0}
                           >
-                            {formatCredentialCooldownSummary(health, locale)}
+                            {issue.summary}
                           </Badge>
                         </TooltipTrigger>
                         <TooltipContent
@@ -301,8 +317,7 @@ export function ChannelCredentialSection({
                           align="start"
                           className="max-w-sm"
                         >
-                          {health.last_error ||
-                            formatCredentialCooldownSummary(health, locale)}
+                          {issue.detail}
                         </TooltipContent>
                       </Tooltip>
                     ) : null}
@@ -384,13 +399,13 @@ export function ChannelCredentialSection({
                   <X />
                 </Button>
               </FieldGroup>
-              {isCooled && health?.last_error ? (
+              {issue ? (
                 <div
                   className="truncate text-xs text-destructive"
-                  title={health.last_error}
+                  title={issue.detail}
                 >
                   {locale === "zh-CN" ? "最近报错：" : "Last error: "}
-                  {health.last_error}
+                  {issue.detail}
                 </div>
               ) : null}
               {credential.rate_source !== "none" ? (
