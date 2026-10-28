@@ -84,9 +84,14 @@ export function BatchModelTestDialog({
       item.protocols.length > 1 && !batchTestDeselectedKeys.has(item.key),
   );
   const testableCount = batchTestOptions.length;
-  const selectedCount = batchTestOptions.filter(
+  const selectedOptions = batchTestOptions.filter(
     (item) => !batchTestDeselectedKeys.has(item.key),
-  ).length;
+  );
+  const selectedCount = selectedOptions.length;
+  const requestCount = selectedOptions.reduce(
+    (total, item) => total + item.credentialCount,
+    0,
+  );
   const canRun =
     selectedCount > 0 &&
     Boolean(batchTestPrompt.trim()) &&
@@ -110,8 +115,8 @@ export function BatchModelTestDialog({
           <div className="grid gap-4">
             <div className="rounded-md border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
               {locale === "zh-CN"
-                ? `将测试 ${selectedCount} 个模型（共 ${testableCount} 个可用）`
-                : `Testing ${selectedCount} of ${testableCount} available models`}
+                ? `将测试 ${selectedCount} 个模型，共 ${requestCount} 个请求（每个模型测试全部密钥）`
+                : `Testing ${selectedCount} models with ${requestCount} requests (every key per model)`}
             </div>
 
             <section className="grid gap-2">
@@ -166,7 +171,10 @@ export function BatchModelTestDialog({
                         {item.modelName}
                       </span>
                       <span className="hidden max-w-[40%] truncate text-xs text-muted-foreground sm:block">
-                        {item.credentialName}
+                        {item.credentialName ||
+                          (locale === "zh-CN"
+                            ? `${item.credentialCount} 个密钥`
+                            : `${item.credentialCount} key(s)`)}
                       </span>
                       <Badge
                         variant="outline"

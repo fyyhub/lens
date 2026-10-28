@@ -68,9 +68,8 @@ export function ChannelsScreen() {
   const batchTest = useBatchModelTest({
     locale,
     prompts: modelTest.modelTestPrompts,
-    optionByKey: modelTest.modelTestOptionByKey,
+    form: editor.form,
     buildPayload: modelTest.buildModelTestPayload,
-    credentials: editor.form.credentials,
   });
   const overviewModels = useAggregatedModels(
     editor.form.protocolConfigs,

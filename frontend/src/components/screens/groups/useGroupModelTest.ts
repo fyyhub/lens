@@ -41,6 +41,7 @@ export function useGroupModelTest(locale: "zh-CN" | "en-US") {
         target: { groupId: targetGroup.id, item, credentialName },
         modelName: item.model_name,
         credentialName,
+        credentialCount: 1,
         protocols: [item.protocol],
       });
     }
@@ -50,23 +51,25 @@ export function useGroupModelTest(locale: "zh-CN" | "en-US") {
     locale,
     prompts,
     optionByKey,
-    prepareRequest: (target, protocol, prompt) => {
+    prepareRequests: (target, protocol, prompt) => {
       const { item } = target;
-      if (item.protocol !== protocol) return null;
+      if (item.protocol !== protocol) return [];
       const payload: ModelGroupModelTestPayload = {
         channel_id: item.channel_id,
         credential_id: item.credential_id,
         model_name: item.model_name,
         prompt,
       };
-      return {
-        path: `/admin/model-groups/${target.groupId}/model-tests`,
-        payload,
-        modelName: item.model_name,
-        credentialName: target.credentialName,
-        credentialId: item.credential_id,
-        protocol,
-      };
+      return [
+        {
+          path: `/admin/model-groups/${target.groupId}/model-tests`,
+          payload,
+          modelName: item.model_name,
+          credentialName: target.credentialName,
+          credentialId: item.credential_id,
+          protocol,
+        },
+      ];
     },
   });
 
