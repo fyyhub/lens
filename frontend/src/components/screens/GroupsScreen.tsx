@@ -276,6 +276,7 @@ export function GroupsScreen() {
             batchTestPrompt={modelTest.batchTestPrompt}
             batchTestConcurrency={modelTest.batchTestConcurrency}
             batchTestOptions={modelTest.batchTestOptions}
+            batchTestDeselectedKeys={modelTest.batchTestDeselectedKeys}
             batchTestRows={modelTest.batchTestRows}
             isBatchModelTestRunning={modelTest.isBatchModelTestRunning}
             onOpenChange={modelTest.changeBatchModelTestOpen}
@@ -283,6 +284,10 @@ export function GroupsScreen() {
             onPromptChange={modelTest.changeBatchTestPrompt}
             onConcurrencyChange={modelTest.setBatchTestConcurrency}
             onProtocolChange={modelTest.changeBatchTestProtocol}
+            onToggleModel={modelTest.toggleBatchTestModel}
+            onSelectAllModels={modelTest.selectAllBatchTestModels}
+            onClearModelSelection={modelTest.clearBatchTestModelSelection}
+            onRetestRow={(key) => void modelTest.retestBatchModelRow(key)}
             onRun={() => void modelTest.runBatchModelTests()}
           />
         ) : null}

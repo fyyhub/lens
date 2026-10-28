@@ -1,8 +1,10 @@
+import { RefreshCcw } from "lucide-react";
 import type {
   BatchModelTestRow,
   BatchModelTestStatus,
 } from "@/components/model-test/batchModelTestSession";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import {
   Table,
   TableBody,
@@ -18,6 +20,8 @@ import type { Locale } from "./channelTypes";
 type Props = {
   rows: BatchModelTestRow[];
   locale: Locale;
+  isRunning?: boolean;
+  onRetest?: (key: string) => void;
 };
 
 function statusLabel(status: BatchModelTestStatus, locale: Locale) {
@@ -37,7 +41,12 @@ function statusVariant(
 }
 
 /** Renders batch model test result rows. */
-export function BatchModelTestResults({ rows, locale }: Props) {
+export function BatchModelTestResults({
+  rows,
+  locale,
+  isRunning = false,
+  onRetest,
+}: Props) {
   if (!rows.length) return null;
   return (
     <div className="overflow-hidden rounded-md border">
@@ -59,6 +68,13 @@ export function BatchModelTestResults({ rows, locale }: Props) {
                 {locale === "zh-CN" ? "耗时" : "Latency"}
               </TableHead>
               <TableHead>{locale === "zh-CN" ? "结果" : "Result"}</TableHead>
+              {onRetest ? (
+                <TableHead className="w-16 text-right">
+                  <span className="sr-only">
+                    {locale === "zh-CN" ? "重测" : "Retest"}
+                  </span>
+                </TableHead>
+              ) : null}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -112,6 +128,25 @@ export function BatchModelTestResults({ rows, locale }: Props) {
                       {displayMessage}
                     </div>
                   </TableCell>
+                  {onRetest ? (
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        title={locale === "zh-CN" ? "重测此模型" : "Retest"}
+                        aria-label={
+                          locale === "zh-CN"
+                            ? `重测 ${row.modelName}`
+                            : `Retest ${row.modelName}`
+                        }
+                        disabled={isRunning || row.status === "running"}
+                        onClick={() => onRetest(row.key)}
+                      >
+                        <RefreshCcw />
+                      </Button>
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               );
             })}
