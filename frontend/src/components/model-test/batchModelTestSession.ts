@@ -26,6 +26,8 @@ export type BatchModelTestSource<TTarget> = {
   target: TTarget;
   modelName: string;
   credentialName: string;
+  /** How many keys this model is tested against; defaults to one. */
+  credentialCount?: number;
   protocols: ProtocolKind[];
 };
 
@@ -33,11 +35,12 @@ export type BatchModelTestOption = {
   key: string;
   modelName: string;
   credentialName: string;
+  credentialCount: number;
   protocols: ProtocolKind[];
   selectedProtocol: ProtocolKind;
 };
 
-type PreparedBatchModelTestRequest = {
+export type PreparedBatchModelTestRequest = {
   path: string;
   payload: object;
   modelName: string;
@@ -57,11 +60,12 @@ type Options<TTarget> = {
   locale: "zh-CN" | "en-US";
   prompts: string[];
   optionByKey: ReadonlyMap<string, BatchModelTestSource<TTarget>>;
-  prepareRequest: (
+  /** Expands one model into every request it needs, e.g. one per key. */
+  prepareRequests: (
     target: TTarget,
     protocol: ProtocolKind,
     prompt: string,
-  ) => PreparedBatchModelTestRequest | null;
+  ) => PreparedBatchModelTestRequest[];
 };
 
 /** Owns batch model-test prompts, concurrency, cancellation, and result rows. */
@@ -69,7 +73,7 @@ export function useBatchModelTestSession<TTarget>({
   locale,
   prompts,
   optionByKey,
-  prepareRequest,
+  prepareRequests,
 }: Options<TTarget>) {
   const [batchModelTestOpen, setBatchModelTestOpen] = useState(false);
   const [isBatchModelTestRunning, setIsBatchModelTestRunning] = useState(false);
@@ -97,6 +101,7 @@ export function useBatchModelTestSession<TTarget>({
         key: option.key,
         modelName: option.modelName,
         credentialName: option.credentialName,
+        credentialCount: option.credentialCount ?? 1,
         protocols: option.protocols,
         selectedProtocol,
       });
@@ -180,33 +185,33 @@ export function useBatchModelTestSession<TTarget>({
     );
   }
 
-  function buildEntry(
+  function buildEntries(
     option: BatchModelTestOption,
     prompt: string,
     protocol: ProtocolKind = option.selectedProtocol,
-  ): RunEntry | null {
+  ): RunEntry[] {
     const source = optionByKey.get(option.key);
-    if (!source) return null;
-    const request = prepareRequest(source.target, protocol, prompt);
-    if (!request) return null;
-    const key = `${option.key}:${request.protocol}`;
-    return {
-      key,
-      request,
-      row: {
+    if (!source) return [];
+    return prepareRequests(source.target, protocol, prompt).map((request) => {
+      const key = `${option.key}:${request.protocol}:${request.credentialId}`;
+      return {
         key,
-        optionKey: option.key,
-        modelName: request.modelName,
-        credentialName: request.credentialName,
-        credentialId: request.credentialId,
-        credentialApiKey: request.credentialApiKey,
-        protocol: request.protocol,
-        status: "pending",
-        statusCode: null,
-        latencyMs: undefined,
-        message: "",
-      },
-    };
+        request,
+        row: {
+          key,
+          optionKey: option.key,
+          modelName: request.modelName,
+          credentialName: request.credentialName,
+          credentialId: request.credentialId,
+          credentialApiKey: request.credentialApiKey,
+          protocol: request.protocol,
+          status: "pending",
+          statusCode: null,
+          latencyMs: undefined,
+          message: "",
+        },
+      };
+    });
   }
 
   async function runEntries(entries: RunEntry[], mode: "replace" | "merge") {
@@ -314,8 +319,7 @@ export function useBatchModelTestSession<TTarget>({
     const entries: RunEntry[] = [];
     for (const option of batchTestOptions) {
       if (!allowed.has(option.key)) continue;
-      const entry = buildEntry(option, prompt);
-      if (entry) entries.push(entry);
+      entries.push(...buildEntries(option, prompt));
     }
     setBatchTestPrompt(prompt);
     await runEntries(entries, "replace");
@@ -339,7 +343,9 @@ export function useBatchModelTestSession<TTarget>({
       );
       return;
     }
-    const entry = buildEntry(option, prompt, row.protocol);
+    const entry = buildEntries(option, prompt, row.protocol).find(
+      (item) => item.key === rowKey,
+    );
     if (!entry) return;
     await runEntries([entry], "merge");
   }

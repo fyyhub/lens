@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useBatchModelTestSession } from "@/components/model-test/batchModelTestSession";
+import {
+  type BatchModelTestSource,
+  type PreparedBatchModelTestRequest,
+  useBatchModelTestSession,
+} from "@/components/model-test/batchModelTestSession";
 import {
   selectedModelTestProtocol,
   useModelTestPrompts,
@@ -15,13 +19,13 @@ import { buildBatchTestFailureIndex } from "@/lib/credentialHealth";
 import { paramOverrideDraftToRules } from "@/lib/upstreamRules";
 import { activeBaseUrlValue, formHeaders } from "./channelForm";
 import {
+  aggregateModelGroupKey,
   credentialLabel,
   fallbackCredentialName,
   modelSupportedProtocols,
   protocolConfigModelKey,
 } from "./channelModels";
 import type {
-  FormCredential,
   FormState,
   Locale,
   ModelTestTarget,
@@ -102,12 +106,15 @@ export function useChannelModelTest(form: FormState, locale: Locale) {
     target: ModelTestTarget,
     protocol: ProtocolKind | null,
     promptValue: string,
+    credentialIndexOverride?: number,
   ): SiteModelTestPayload | null {
     const config = form.protocolConfigs[target.protocolConfigIndex];
     const model = config?.models[target.modelIndex];
-    const credentialIndex = model
-      ? form.credentials.findIndex((item) => item.id === model.credential_id)
-      : -1;
+    const credentialIndex =
+      credentialIndexOverride ??
+      (model
+        ? form.credentials.findIndex((item) => item.id === model.credential_id)
+        : -1);
     const credential = form.credentials[credentialIndex];
     const baseUrl = config ? activeBaseUrlValue(form, config).trim() : "";
     const prompt = promptValue.trim();
@@ -280,43 +287,79 @@ type PayloadBuilder = (
   target: ModelTestTarget,
   protocol: ProtocolKind | null,
   prompt: string,
+  credentialIndex?: number,
 ) => SiteModelTestPayload | null;
 
-/** Adapts editable channel models to the shared batch-test session. */
+/**
+ * Adapts editable channel models to the shared batch-test session.
+ *
+ * Options are keyed by model name only: selecting a model tests it against
+ * every key in the channel, so the list stays a model picker rather than a
+ * key-by-model matrix.
+ */
 export function useBatchModelTest({
   locale,
   prompts,
-  optionByKey,
+  form,
   buildPayload,
-  credentials,
 }: {
   locale: Locale;
   prompts: string[];
-  optionByKey: Map<string, TestableModelOption>;
+  form: FormState;
   buildPayload: PayloadBuilder;
-  credentials: FormCredential[];
 }) {
+  const optionByKey = useMemo(() => {
+    const options = new Map<string, BatchModelTestSource<ModelTestTarget>>();
+    const credentialCount = form.credentials.filter((credential) =>
+      credential.api_key.trim(),
+    ).length;
+    for (const [configIndex, config] of form.protocolConfigs.entries()) {
+      if (!config.enabled || !activeBaseUrlValue(form, config).trim()) continue;
+      for (const [modelIndex, model] of config.models.entries()) {
+        const modelName = model.model_name.trim();
+        if (!modelName) continue;
+        const protocols = modelSupportedProtocols(model);
+        if (!protocols.length) continue;
+        const key = aggregateModelGroupKey(config, modelName);
+        if (options.has(key)) continue;
+        options.set(key, {
+          key,
+          target: { protocolConfigIndex: configIndex, modelIndex },
+          modelName,
+          credentialName: "",
+          credentialCount,
+          protocols,
+        });
+      }
+    }
+    return options;
+  }, [form]);
   const session = useBatchModelTestSession({
     locale,
     prompts,
     optionByKey,
-    prepareRequest: (target, protocol, prompt) => {
-      const payload = buildPayload(target, protocol, prompt);
-      if (!payload) return null;
-      return {
-        path: "/admin/site-model-tests",
-        payload,
-        modelName: payload.model_name,
-        credentialName: payload.credential.name,
-        credentialId: payload.credential.id,
-        credentialApiKey: payload.credential.api_key,
-        protocol: payload.protocol,
-      };
+    prepareRequests: (target, protocol, prompt) => {
+      const requests: PreparedBatchModelTestRequest[] = [];
+      for (const [index, credential] of form.credentials.entries()) {
+        if (!credential.api_key.trim()) continue;
+        const payload = buildPayload(target, protocol, prompt, index);
+        if (!payload) continue;
+        requests.push({
+          path: "/admin/site-model-tests",
+          payload,
+          modelName: payload.model_name,
+          credentialName: payload.credential.name,
+          credentialId: payload.credential.id,
+          credentialApiKey: payload.credential.api_key,
+          protocol: payload.protocol,
+        });
+      }
+      return requests;
     },
   });
   const batchTestFailures = useMemo(
-    () => buildBatchTestFailureIndex(session.batchTestRows, credentials),
-    [session.batchTestRows, credentials],
+    () => buildBatchTestFailureIndex(session.batchTestRows, form.credentials),
+    [session.batchTestRows, form.credentials],
   );
   return { ...session, batchTestFailures };
 }
