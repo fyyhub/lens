@@ -96,6 +96,7 @@ export function ChannelsDialogs({
           fetchingProtocolConfigIndex={picker.fetchingProtocolConfigIndex}
           duplicatedProtocolConfigKeys={editor.duplicatedProtocolConfigKeys}
           batchTestOptions={batchTest.batchTestOptions}
+          batchTestFailures={batchTest.batchTestFailures}
           isBatchModelTestRunning={batchTest.isBatchModelTestRunning}
           testingModel={modelTest.testingModel}
           savingChannel={modelGroups.isEnsuringModelGroups}

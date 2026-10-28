@@ -17,7 +17,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/Popover";
-import type { AggregatedCredentialHealth } from "@/lib/credentialHealth";
+import type {
+  AggregatedCredentialHealth,
+  BatchTestCredentialFailure,
+} from "@/lib/credentialHealth";
 import { ChannelBaseUrlSection } from "./ChannelBaseUrlSection";
 import { ChannelCredentialSection } from "./ChannelCredentialSection";
 import type {
@@ -34,6 +37,7 @@ type Props = {
   siteId: string | null;
   canSyncRates: boolean;
   credentialHealthById: ReadonlyMap<string, AggregatedCredentialHealth>;
+  batchTestFailures: ReadonlyMap<string, BatchTestCredentialFailure>;
   onRateSyncingChange: (isSyncing: boolean) => void;
   setForm: Dispatch<SetStateAction<FormState>>;
   addBaseUrl: () => void;
@@ -56,6 +60,7 @@ export function ChannelBasicInfoSection({
   siteId,
   canSyncRates,
   credentialHealthById,
+  batchTestFailures,
   onRateSyncingChange,
   setForm,
   addBaseUrl,
@@ -250,6 +255,7 @@ export function ChannelBasicInfoSection({
             siteId={siteId}
             canSyncRates={canSyncRates}
             credentialHealthById={credentialHealthById}
+            batchTestFailures={batchTestFailures}
             locale={locale}
             onSyncingChange={onRateSyncingChange}
             onAdd={(credential) =>

@@ -7,11 +7,11 @@ import {
 } from "@/components/model-test/modelTestSession";
 import { apiRequest, getApiErrorMessage } from "@/lib/api/client";
 import type { ProtocolKind } from "@/lib/api/protocols";
-
 import type {
   SiteModelTestPayload,
   SiteModelTestResult,
 } from "@/lib/api/sites";
+import { buildBatchTestFailureIndex } from "@/lib/credentialHealth";
 import { paramOverrideDraftToRules } from "@/lib/upstreamRules";
 import { activeBaseUrlValue, formHeaders } from "./channelForm";
 import {
@@ -287,13 +287,15 @@ export function useBatchModelTest({
   prompts,
   optionByKey,
   buildPayload,
+  credentials,
 }: {
   locale: Locale;
   prompts: string[];
   optionByKey: Map<string, TestableModelOption>;
   buildPayload: PayloadBuilder;
+  credentials: FormCredential[];
 }) {
-  return useBatchModelTestSession({
+  const session = useBatchModelTestSession({
     locale,
     prompts,
     optionByKey,
@@ -305,8 +307,15 @@ export function useBatchModelTest({
         payload,
         modelName: payload.model_name,
         credentialName: payload.credential.name,
+        credentialId: payload.credential.id,
+        credentialApiKey: payload.credential.api_key,
         protocol: payload.protocol,
       };
     },
   });
+  const batchTestFailures = useMemo(
+    () => buildBatchTestFailureIndex(session.batchTestRows, credentials),
+    [session.batchTestRows, credentials],
+  );
+  return { ...session, batchTestFailures };
 }

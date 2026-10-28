@@ -28,6 +28,12 @@ export type SiteRuntimeCredentialSummary = {
   credentials_by_id: Map<string, AggregatedCredentialHealth>;
 };
 
+export type BatchTestCredentialFailure = {
+  credentialId: string;
+  message: string;
+  statusCode: number | null;
+};
+
 export type CredentialHealthIndex = {
   byCredentialId: Map<string, AggregatedCredentialHealth>;
   bySiteId: Map<string, SiteRuntimeCredentialSummary>;
@@ -177,6 +183,40 @@ export function buildCredentialHealthIndex(
     bySiteId,
     byChannelName,
   };
+}
+
+/**
+ * Index credentials that failed a client-side batch model test.
+ *
+ * Batch tests probe upstream directly, so they never cool a key in the router
+ * snapshot. Comparing the tested key against the current one keeps a replaced
+ * key from inheriting the previous key's failure.
+ */
+export function buildBatchTestFailureIndex(
+  rows: ReadonlyArray<{
+    credentialId: string;
+    credentialApiKey?: string;
+    status: string;
+    statusCode: number | null;
+    message: string;
+  }>,
+  credentials: ReadonlyArray<{ id: string; api_key: string }>,
+): Map<string, BatchTestCredentialFailure> {
+  const currentKeyById = new Map(
+    credentials.map((credential) => [credential.id, credential.api_key.trim()]),
+  );
+  const failures = new Map<string, BatchTestCredentialFailure>();
+  for (const row of rows) {
+    if (row.status !== "failed") continue;
+    if (currentKeyById.get(row.credentialId) !== row.credentialApiKey) continue;
+    if (failures.has(row.credentialId)) continue;
+    failures.set(row.credentialId, {
+      credentialId: row.credentialId,
+      message: row.message,
+      statusCode: row.statusCode,
+    });
+  }
+  return failures;
 }
 
 /** Query the runtime router snapshot and index credential health states. */

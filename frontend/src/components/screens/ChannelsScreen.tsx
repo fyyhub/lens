@@ -70,6 +70,7 @@ export function ChannelsScreen() {
     prompts: modelTest.modelTestPrompts,
     optionByKey: modelTest.modelTestOptionByKey,
     buildPayload: modelTest.buildModelTestPayload,
+    credentials: editor.form.credentials,
   });
   const overviewModels = useAggregatedModels(
     editor.form.protocolConfigs,

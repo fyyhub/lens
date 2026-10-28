@@ -10,7 +10,10 @@ import { Button } from "@/components/ui/Button";
 import { AppDialogContent, Dialog } from "@/components/ui/Dialog";
 import { Separator } from "@/components/ui/Separator";
 import type { ProtocolKind } from "@/lib/api/protocols";
-import type { AggregatedCredentialHealth } from "@/lib/credentialHealth";
+import type {
+  AggregatedCredentialHealth,
+  BatchTestCredentialFailure,
+} from "@/lib/credentialHealth";
 import { ChannelBasicInfoSection } from "./ChannelBasicInfoSection";
 import { ChannelModelOverviewSection } from "./ChannelModelOverviewSection";
 import { ChannelProtocolSection } from "./ChannelProtocolSection";
@@ -34,6 +37,7 @@ type ChannelEditorDialogProps = {
   fetchingProtocolConfigIndex: number | null;
   duplicatedProtocolConfigKeys: Set<string>;
   batchTestOptions: BatchModelTestOption[];
+  batchTestFailures: ReadonlyMap<string, BatchTestCredentialFailure>;
   isBatchModelTestRunning: boolean;
   testingModel: boolean;
   savingChannel: boolean;
@@ -92,6 +96,7 @@ export function ChannelEditorDialog({
   fetchingProtocolConfigIndex,
   duplicatedProtocolConfigKeys,
   batchTestOptions,
+  batchTestFailures,
   isBatchModelTestRunning,
   testingModel,
   savingChannel,
@@ -214,6 +219,7 @@ export function ChannelEditorDialog({
                 siteId={editingSiteId}
                 canSyncRates={Boolean(editingSiteId) && !hasUnsavedChanges}
                 credentialHealthById={credentialHealthById}
+                batchTestFailures={batchTestFailures}
                 onRateSyncingChange={setIsRateSyncing}
                 setForm={setForm}
                 addBaseUrl={addBaseUrl}
