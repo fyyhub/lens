@@ -5,6 +5,7 @@ import {
   Clock3,
   GripVertical,
   Plus,
+  TriangleAlert,
   X,
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
@@ -19,6 +20,12 @@ import {
 } from "@/components/ui/Tooltip";
 import type { ModelGroupCandidateItem } from "@/lib/api/groups";
 import { cn } from "@/lib/classNames";
+import {
+  type AggregatedCredentialHealth,
+  formatCredentialCooldownSummary,
+  formatHealthCredentialLabel,
+  useRouterSnapshot,
+} from "@/lib/credentialHealth";
 import { protocolBadgeClassName, protocolLabel } from "@/lib/protocols";
 import type { FoldedMember, GroupCardDragging, GroupRow } from "./groupTypes";
 import {
@@ -60,6 +67,8 @@ export function ModelGroupMembers({
   removeGroupChannel,
   removeGroupMember,
 }: ModelGroupMembersProps) {
+  const { credentialHealthIndex } = useRouterSnapshot();
+
   if (group.is_route_group) {
     return (
       <Badge variant="outline" className="px-3 py-1.5">
@@ -85,6 +94,15 @@ export function ModelGroupMembers({
         (member) =>
           member.invalid_item_count > 0 || member.unavailable_item_count > 0,
       );
+      const cooledCredentialMap = new Map<string, AggregatedCredentialHealth>();
+      for (const member of channel.members) {
+        const credId = member.items[0]?.credential_id ?? "";
+        const credHealth = credentialHealthIndex.byCredentialId.get(credId);
+        if (credHealth && !credHealth.available) {
+          cooledCredentialMap.set(credId, credHealth);
+        }
+      }
+      const cooledCredentials = Array.from(cooledCredentialMap.values());
       const modelNames = channel.members
         .map((member) => member.model_name)
         .join(" · ");
@@ -95,6 +113,9 @@ export function ModelGroupMembers({
             "flex min-w-0 max-w-full items-center rounded-full border bg-background",
             !hasEnabledMember && !hasProblem && "opacity-55",
             hasProblem && "border-destructive/30 bg-destructive/5",
+            !hasProblem &&
+              cooledCredentials.length > 0 &&
+              "border-amber-500/40 bg-amber-500/5",
             cardDragging?.groupId === group.id &&
               cardDragging.kind === "channel" &&
               cardDragging.index === index &&
@@ -129,6 +150,40 @@ export function ModelGroupMembers({
               {channel.channel_name || channel.channel_id || "n/a"}
             </span>
           </Button>
+          {cooledCredentials.length > 0 ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge
+                  variant="outline"
+                  className="mr-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  tabIndex={0}
+                >
+                  <TriangleAlert data-icon="inline-start" />
+                  {locale === "zh-CN"
+                    ? `${cooledCredentials.length} 密钥冷却`
+                    : `${cooledCredentials.length} key cooling`}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="grid max-w-sm gap-1">
+                {cooledCredentials.map((cred) => (
+                  <div
+                    key={cred.credential_id}
+                    className="grid gap-0.5 text-xs"
+                  >
+                    <div className="font-medium">
+                      {formatHealthCredentialLabel(cred, locale)} ·{" "}
+                      {formatCredentialCooldownSummary(cred, locale)}
+                    </div>
+                    {cred.last_error ? (
+                      <div className="line-clamp-2 text-background/80">
+                        {cred.last_error}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
           <Button
             type="button"
             variant="destructive"
@@ -154,6 +209,12 @@ export function ModelGroupMembers({
     const channelName = member.channel_names.slice(0, 2).join(" · ") || "n/a";
     const sourceLabel = `${channelName} · ${credentialDisplayLabel(member, locale)}`;
     const enabled = member.ready_item_count > 0;
+    const credentialId = member.items[0]?.credential_id ?? "";
+    const credentialHealth =
+      credentialHealthIndex.byCredentialId.get(credentialId);
+    const isCredentialCooled = Boolean(
+      credentialHealth && !credentialHealth.available,
+    );
     const invalidReasons = modelGroupReasonsForState(member.items, "invalid");
     const unavailableReasons = modelGroupReasonsForState(
       member.items,
@@ -169,6 +230,9 @@ export function ModelGroupMembers({
           "flex min-w-0 max-w-full items-center rounded-full border bg-background",
           !enabled && !problemLabels.length && "opacity-55",
           problemLabels.length > 0 && "border-destructive/30 bg-destructive/5",
+          !problemLabels.length &&
+            isCredentialCooled &&
+            "border-amber-500/40 bg-amber-500/5",
           cardDragging?.groupId === group.id &&
             cardDragging.kind === "member" &&
             cardDragging.index === index &&
@@ -206,6 +270,32 @@ export function ModelGroupMembers({
             · {sourceLabel}
           </span>
         </Button>
+        {isCredentialCooled && credentialHealth ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge
+                variant="outline"
+                className="mr-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                tabIndex={0}
+              >
+                <TriangleAlert data-icon="inline-start" />
+                {locale === "zh-CN" ? "密钥冷却" : "Key cooling"}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" className="max-w-sm">
+              <div className="grid gap-0.5 text-xs">
+                <div className="font-medium">
+                  {formatCredentialCooldownSummary(credentialHealth, locale)}
+                </div>
+                {credentialHealth.last_error ? (
+                  <div className="line-clamp-2 text-background/80">
+                    {credentialHealth.last_error}
+                  </div>
+                ) : null}
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
         {invalidReasons.length ? (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -265,7 +355,12 @@ export function CandidateRow({
   locale: "zh-CN" | "en-US";
   onClick: () => void;
 }) {
+  const { credentialHealthIndex } = useRouterSnapshot();
   const nativeProtocols = candidate.protocols;
+  const credentialHealth = credentialHealthIndex.byCredentialId.get(
+    candidate.credential_id,
+  );
+  const isCooled = Boolean(credentialHealth && !credentialHealth.available);
 
   return (
     <Button
@@ -279,8 +374,25 @@ export function CandidateRow({
       disabled={active}
     >
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium text-foreground">
-          {candidate.model_name}
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-sm font-medium text-foreground">
+            {candidate.model_name}
+          </span>
+          <span className="shrink-0 text-xs text-muted-foreground">
+            · {credentialDisplayLabel(candidate, locale)}
+          </span>
+          {isCooled && credentialHealth ? (
+            <Badge
+              variant="outline"
+              className="shrink-0 border-amber-500/40 bg-amber-500/10 px-1.5 py-0 text-[10px] text-amber-700 dark:text-amber-300"
+              title={
+                credentialHealth.last_error ||
+                formatCredentialCooldownSummary(credentialHealth, locale)
+              }
+            >
+              {locale === "zh-CN" ? "密钥冷却" : "Key cooling"}
+            </Badge>
+          ) : null}
         </div>
       </div>
       <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-1.5">
@@ -336,6 +448,13 @@ export function FoldedMemberRow({
   showChannelName?: boolean;
   locale: "zh-CN" | "en-US";
 }) {
+  const { credentialHealthIndex } = useRouterSnapshot();
+  const credentialHealth = credentialHealthIndex.byCredentialId.get(
+    member.credential_id,
+  );
+  const isCredentialCooled = Boolean(
+    credentialHealth && !credentialHealth.available,
+  );
   const sourceLabel = showChannelName
     ? foldedMemberSourceLabel(member, locale)
     : credentialDisplayLabel(member, locale);
@@ -402,6 +521,24 @@ export function FoldedMemberRow({
         </div>
       </div>
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+        {isCredentialCooled && credentialHealth ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge
+                variant="outline"
+                className="border-amber-500/40 bg-amber-500/10 px-1.5 py-0 text-[10px] text-amber-700 dark:text-amber-300"
+                tabIndex={0}
+              >
+                <TriangleAlert data-icon="inline-start" />
+                {formatCredentialCooldownSummary(credentialHealth, locale)}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-sm">
+              {credentialHealth.last_error ||
+                formatCredentialCooldownSummary(credentialHealth, locale)}
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
         {member.rate_source !== "none" &&
         typeof member.rate_multiplier === "number" ? (
           <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">

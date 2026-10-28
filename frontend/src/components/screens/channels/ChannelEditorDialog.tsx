@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { AppDialogContent, Dialog } from "@/components/ui/Dialog";
 import { Separator } from "@/components/ui/Separator";
 import type { ProtocolKind } from "@/lib/api/protocols";
+import type { AggregatedCredentialHealth } from "@/lib/credentialHealth";
 import { ChannelBasicInfoSection } from "./ChannelBasicInfoSection";
 import { ChannelModelOverviewSection } from "./ChannelModelOverviewSection";
 import { ChannelProtocolSection } from "./ChannelProtocolSection";
@@ -37,6 +38,7 @@ type ChannelEditorDialogProps = {
   testingModel: boolean;
   savingChannel: boolean;
   overviewModels: AggregatedModel[];
+  credentialHealthById: ReadonlyMap<string, AggregatedCredentialHealth>;
   modelTestOptionByKey: Map<string, TestableModelOption>;
   setIsDialogOpen: Dispatch<SetStateAction<boolean>>;
   setEditingSiteId: Dispatch<SetStateAction<string | null>>;
@@ -52,6 +54,7 @@ type ChannelEditorDialogProps = {
     patch: Partial<FormCredential>,
   ) => void;
   removeCredential: (index: number) => void;
+  removeCredentials: (credentialIds: string[]) => void;
   addProtocolConfig: () => void;
   updateProtocolConfig: (
     index: number,
@@ -93,6 +96,7 @@ export function ChannelEditorDialog({
   testingModel,
   savingChannel,
   overviewModels,
+  credentialHealthById,
   modelTestOptionByKey,
   setIsDialogOpen,
   setEditingSiteId,
@@ -105,6 +109,7 @@ export function ChannelEditorDialog({
   addCredentials,
   updateCredential,
   removeCredential,
+  removeCredentials,
   addProtocolConfig,
   updateProtocolConfig,
   addManualProtocolConfigModel,
@@ -208,6 +213,7 @@ export function ChannelEditorDialog({
                 availableTags={availableTags}
                 siteId={editingSiteId}
                 canSyncRates={Boolean(editingSiteId) && !hasUnsavedChanges}
+                credentialHealthById={credentialHealthById}
                 onRateSyncingChange={setIsRateSyncing}
                 setForm={setForm}
                 addBaseUrl={addBaseUrl}
@@ -216,6 +222,7 @@ export function ChannelEditorDialog({
                 updateCredential={updateCredential}
                 addCredentials={addCredentials}
                 removeCredential={removeCredential}
+                removeCredentials={removeCredentials}
               />
               <Separator />
               <section className="grid gap-4">
@@ -236,6 +243,7 @@ export function ChannelEditorDialog({
                 <ChannelModelOverviewSection
                   locale={locale}
                   overviewModels={overviewModels}
+                  credentialHealthById={credentialHealthById}
                   modelTestOptionByKey={modelTestOptionByKey}
                   batchTestOptions={batchTestOptions}
                   isBatchModelTestRunning={isBatchModelTestRunning}

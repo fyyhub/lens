@@ -1,5 +1,5 @@
-import { Trash2 } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
+import { Globe2, Trash2, TriangleAlert } from "lucide-react";
+import { type Dispatch, type SetStateAction, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -13,9 +13,19 @@ import {
   ItemTitle,
 } from "@/components/ui/Item";
 import { Switch } from "@/components/ui/Switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/Tooltip";
 import type { ProtocolKind } from "@/lib/api/protocols";
 import type { Site } from "@/lib/api/sites";
+import {
+  formatCredentialCooldownSummary,
+  formatHealthCredentialLabel,
+} from "@/lib/credentialHealth";
 import { ChannelFiltersPanel } from "./ChannelFiltersPanel";
+import { getSiteFaviconCandidates } from "./channelModels";
 import type {
   ChannelSort,
   ChannelStatusFilter,
@@ -107,6 +117,72 @@ export function ChannelsOverview({
                           <ItemTitle className="truncate text-base">
                             {site.name}
                           </ItemTitle>
+                          {site.cooled_key_count > 0 ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge
+                                  variant={
+                                    site.available_key_count === 0
+                                      ? "destructive"
+                                      : "outline"
+                                  }
+                                  className={
+                                    site.available_key_count > 0
+                                      ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                                      : undefined
+                                  }
+                                  tabIndex={0}
+                                >
+                                  <TriangleAlert data-icon="inline-start" />
+                                  {site.available_key_count === 0
+                                    ? locale === "zh-CN"
+                                      ? `全部密钥冷却 (${site.cooled_key_count})`
+                                      : `All keys cooled (${site.cooled_key_count})`
+                                    : locale === "zh-CN"
+                                      ? `${site.cooled_key_count} 个密钥冷却中`
+                                      : `${site.cooled_key_count} ${
+                                          site.cooled_key_count === 1
+                                            ? "key"
+                                            : "keys"
+                                        } cooling`}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="bottom"
+                                align="start"
+                                className="grid max-w-sm gap-1.5"
+                              >
+                                <div className="font-medium">
+                                  {locale === "zh-CN"
+                                    ? "运行时失效/冷却密钥（点击卡片可批量清理）"
+                                    : "Cooling / failed keys (click card to clean up)"}
+                                </div>
+                                {site.cooled_credentials.map((cred) => (
+                                  <div
+                                    key={cred.credential_id}
+                                    className="grid gap-0.5 text-xs"
+                                  >
+                                    <div className="font-medium">
+                                      {formatHealthCredentialLabel(
+                                        cred,
+                                        locale,
+                                      )}{" "}
+                                      ·{" "}
+                                      {formatCredentialCooldownSummary(
+                                        cred,
+                                        locale,
+                                      )}
+                                    </div>
+                                    {cred.last_error ? (
+                                      <div className="line-clamp-2 text-background/80">
+                                        {cred.last_error}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ))}
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : null}
                         </div>
                         {site.tags.length ? (
                           <div className="flex flex-wrap gap-1.5">
@@ -213,7 +289,3 @@ function SiteFavicon({ url, name }: { url: string; name: string }) {
     </span>
   );
 }
-
-import { Globe2 } from "lucide-react";
-import { useState } from "react";
-import { getSiteFaviconCandidates } from "./channelModels";

@@ -23,6 +23,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/Tooltip";
 import type { ProtocolKind } from "@/lib/api/protocols";
+import type { AggregatedCredentialHealth } from "@/lib/credentialHealth";
 import type { Locale, TestableModelOption } from "./channelTypes";
 import { SiteModelAggregateView } from "./SiteModelAggregateView";
 import type { AggregatedModel } from "./useChannelQueries";
@@ -30,6 +31,7 @@ import type { AggregatedModel } from "./useChannelQueries";
 type Props = {
   locale: Locale;
   overviewModels: AggregatedModel[];
+  credentialHealthById: ReadonlyMap<string, AggregatedCredentialHealth>;
   modelTestOptionByKey: Map<string, TestableModelOption>;
   batchTestOptions: BatchModelTestOption[];
   isBatchModelTestRunning: boolean;
@@ -53,6 +55,7 @@ type Props = {
 export function ChannelModelOverviewSection({
   locale,
   overviewModels,
+  credentialHealthById,
   modelTestOptionByKey,
   batchTestOptions,
   isBatchModelTestRunning,
@@ -235,6 +238,7 @@ export function ChannelModelOverviewSection({
       </div>
       <SiteModelAggregateView
         models={filteredModels}
+        credentialHealthById={credentialHealthById}
         locale={locale}
         emptyLabel={
           hasSearch

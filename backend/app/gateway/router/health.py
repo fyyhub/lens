@@ -315,7 +315,14 @@ def build_channel_health(
         for model_name in sorted(model_names)
     ]
     credential_health = [
-        _build_credential_health(cooldowns, channel.id, key.id, now=now)
+        _build_credential_health(
+            cooldowns,
+            channel.id,
+            key.id,
+            credential_name=key.remark,
+            credential_number=key.number,
+            now=now,
+        )
         for key in channel.keys
         if key.enabled
     ]
@@ -343,6 +350,8 @@ def build_channel_health(
     available_model_count = sum(item.available for item in model_health)
     return ChannelHealth(
         channel_id=channel.id,
+        site_id=channel.site_id,
+        channel_name=channel.name,
         consecutive_failures=max(
             (state.consecutive_failures for state in states), default=0
         ),
@@ -396,13 +405,27 @@ def _build_model_health(
 
 
 def _build_credential_health(
-    cooldowns: CooldownLedger, channel_id: str, key_id: str, *, now: float
+    cooldowns: CooldownLedger,
+    channel_id: str,
+    key_id: str,
+    *,
+    credential_name: str = "",
+    credential_number: int = 0,
+    now: float,
 ) -> ChannelCredentialHealth:
     state = cooldowns.credential_state(channel_id, key_id)
     cooled_until = state.cooled_until if state else 0.0
     return ChannelCredentialHealth(
         credential_id=key_id,
+        credential_name=credential_name,
+        credential_number=credential_number,
         consecutive_failures=state.consecutive_failures if state else 0,
+        last_error=state.last_error if state else None,
+        last_error_category=(
+            state.last_error_category.value
+            if state and state.last_error_category
+            else None
+        ),
         cooled_until=cooled_until,
         cooldown_remaining_seconds=remaining_seconds(cooled_until, now=now),
         last_cooldown_seconds=int(state.last_cooldown if state else 0.0),

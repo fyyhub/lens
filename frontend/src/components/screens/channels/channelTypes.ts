@@ -7,6 +7,7 @@ import type {
   SiteCredential,
   SiteModelInput,
 } from "@/lib/api/sites";
+import type { AggregatedCredentialHealth } from "@/lib/credentialHealth";
 import type { Locale } from "@/lib/I18nContext";
 import type {
   HeaderRuleDraft,
@@ -75,6 +76,9 @@ export type SiteRow = Site & {
   enabled_protocol_channel_count: number;
   model_count: number;
   endpoint_summary: string;
+  cooled_key_count: number;
+  available_key_count: number;
+  cooled_credentials: AggregatedCredentialHealth[];
 };
 
 export type ChannelStatusFilter = "all" | "enabled" | "disabled";

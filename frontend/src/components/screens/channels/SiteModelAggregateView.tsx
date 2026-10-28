@@ -1,9 +1,19 @@
-import { ChevronDown, Trash2 } from "lucide-react";
+import { ChevronDown, Trash2, TriangleAlert } from "lucide-react";
 import { useState } from "react";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/Tooltip";
 import type { ProtocolKind } from "@/lib/api/protocols";
 import { cn } from "@/lib/classNames";
+import {
+  type AggregatedCredentialHealth,
+  formatCredentialCooldownSummary,
+} from "@/lib/credentialHealth";
 import type { Locale } from "./channelTypes";
 import { ProtocolMultiSelect } from "./ProtocolMultiSelect";
 import type { AggregatedModel } from "./useChannelQueries";
@@ -11,6 +21,7 @@ import type { AggregatedModel } from "./useChannelQueries";
 /** Renders aggregated channel models with protocol and test actions. */
 export function SiteModelAggregateView({
   models,
+  credentialHealthById,
   locale,
   emptyLabel,
   onChangeModelProtocols,
@@ -21,6 +32,7 @@ export function SiteModelAggregateView({
   testingDisabled,
 }: {
   models: AggregatedModel[];
+  credentialHealthById?: ReadonlyMap<string, AggregatedCredentialHealth>;
   locale: Locale;
   emptyLabel?: string;
   onChangeModelProtocols: (
@@ -84,6 +96,10 @@ export function SiteModelAggregateView({
             : deleteModelLabel;
           const isExpanded = expandedModelKeys.includes(modelKey);
           const isMultiKey = members.length > 1;
+          const cooledMembers = members.flatMap((member) => {
+            const health = credentialHealthById?.get(member.credentialId);
+            return health && !health.available ? [{ member, health }] : [];
+          });
           return (
             <div key={modelKey} className="border-b py-1 last:border-b-0">
               <div className="grid min-w-0 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(180px,0.34fr)_minmax(200px,0.42fr)_auto] md:items-center">
@@ -95,7 +111,11 @@ export function SiteModelAggregateView({
                     {isMultiKey ? (
                       <button
                         type="button"
-                        className="flex shrink-0 items-center gap-0.5 rounded px-1 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                        className={cn(
+                          "flex shrink-0 items-center gap-0.5 rounded px-1 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground",
+                          cooledMembers.length > 0 &&
+                            "bg-amber-500/10 font-medium text-amber-700 hover:text-amber-800 dark:text-amber-300",
+                        )}
                         title={sourceLabel}
                         aria-label={
                           locale === "zh-CN"
@@ -105,8 +125,16 @@ export function SiteModelAggregateView({
                         onClick={() => toggleExpanded(modelKey)}
                       >
                         {locale === "zh-CN"
-                          ? `${members.length} 个密钥`
-                          : `${members.length} keys`}
+                          ? `${members.length} 个密钥${
+                              cooledMembers.length > 0
+                                ? ` · ${cooledMembers.length} 冷却`
+                                : ""
+                            }`
+                          : `${members.length} keys${
+                              cooledMembers.length > 0
+                                ? ` · ${cooledMembers.length} cooling`
+                                : ""
+                            }`}
                         <ChevronDown
                           className={cn(
                             "size-3 transition-transform",
@@ -114,6 +142,35 @@ export function SiteModelAggregateView({
                           )}
                         />
                       </button>
+                    ) : cooledMembers.length === 1 && cooledMembers[0] ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge
+                            variant="destructive"
+                            className="shrink-0 px-1.5 py-0 text-[10px]"
+                            tabIndex={0}
+                          >
+                            <TriangleAlert className="size-2.5" />
+                            {locale === "zh-CN" ? "密钥冷却中" : "Key cooling"}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-sm">
+                          <div className="grid gap-0.5 text-xs">
+                            <div className="font-medium">
+                              {cooledMembers[0].member.credentialName} ·{" "}
+                              {formatCredentialCooldownSummary(
+                                cooledMembers[0].health,
+                                locale,
+                              )}
+                            </div>
+                            {cooledMembers[0].health.last_error ? (
+                              <div className="text-background/80">
+                                {cooledMembers[0].health.last_error}
+                              </div>
+                            ) : null}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
                     ) : null}
                     {isTargetOnly ? (
                       <span className="shrink-0 rounded-full border border-amber-500/40 px-2 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
@@ -178,14 +235,48 @@ export function SiteModelAggregateView({
                     const memberDeleteLabel = member.isTargetOnly
                       ? deleteTargetLabel
                       : deleteModelLabel;
+                    const memberHealth = credentialHealthById?.get(
+                      member.credentialId,
+                    );
+                    const isMemberCooled = Boolean(
+                      memberHealth && !memberHealth.available,
+                    );
                     return (
                       <div
                         key={member.key}
                         className="flex min-w-0 items-center gap-2 py-1"
                       >
-                        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                        <span
+                          className={cn(
+                            "min-w-0 flex-1 truncate text-xs text-muted-foreground",
+                            isMemberCooled && "font-medium text-destructive",
+                          )}
+                        >
                           {member.credentialName}
                         </span>
+                        {isMemberCooled && memberHealth ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge
+                                variant="destructive"
+                                className="shrink-0 px-1.5 py-0 text-[10px]"
+                                tabIndex={0}
+                              >
+                                {formatCredentialCooldownSummary(
+                                  memberHealth,
+                                  locale,
+                                )}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-sm">
+                              {memberHealth.last_error ||
+                                formatCredentialCooldownSummary(
+                                  memberHealth,
+                                  locale,
+                                )}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : null}
                         {member.isTargetOnly ? (
                           <span className="shrink-0 text-xs text-amber-700 dark:text-amber-300">
                             {pendingLabel}

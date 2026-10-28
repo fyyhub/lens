@@ -192,6 +192,7 @@ export function ChannelsScreen() {
           batchTest={batchTest}
           modelGroups={modelGroups}
           overviewModels={overviewModels}
+          credentialHealthById={queries.credentialHealthIndex.byCredentialId}
           advancedConfigIndex={advancedConfigIndex}
           setAdvancedConfigIndex={setAdvancedConfigIndex}
         />
