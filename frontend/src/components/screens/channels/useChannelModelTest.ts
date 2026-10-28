@@ -21,6 +21,7 @@ import {
   protocolConfigModelKey,
 } from "./channelModels";
 import type {
+  FormCredential,
   FormState,
   Locale,
   ModelTestTarget,
