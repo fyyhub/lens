@@ -122,13 +122,11 @@ export function ChannelCredentialSection({
     return { credential, index, issue };
   });
   const failedEntries = indexedCredentials.filter((entry) => entry.issue);
-  // Keep failed credentials visible even when the list is collapsed so failed
-  // keys beyond the first 5 are immediately discoverable.
+  // Failed keys stay inside the collapsed window; the header badge and the
+  // batch-remove button already surface them without expanding the list.
   const visibleEntries =
     isCollapsible && !isListExpanded
-      ? indexedCredentials.filter(
-          (entry, idx) => idx < COLLAPSED_CREDENTIAL_LIMIT || entry.issue,
-        )
+      ? indexedCredentials.slice(0, COLLAPSED_CREDENTIAL_LIMIT)
       : indexedCredentials;
 
   function removeFailedCredentials() {
