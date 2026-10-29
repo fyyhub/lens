@@ -233,7 +233,6 @@ export function foldGroupMembers(
     };
     const key = modelFoldKey(
       evaluatedItem.protocol_config_id,
-      evaluatedItem.credential_id,
       evaluatedItem.model_name,
     );
     if (!membersByKey.has(key)) {

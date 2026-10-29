@@ -63,6 +63,30 @@ export function credentialDisplayLabel(
   );
 }
 
+/** Collect the distinct key labels backing a folded member. */
+export function foldedMemberCredentialLabels(
+  member: Pick<FoldedMember, "subItems">,
+  locale: "zh-CN" | "en-US",
+) {
+  const labels = new Map<string, string>();
+  for (const item of member.subItems) {
+    if (!labels.has(item.credential_id)) {
+      labels.set(item.credential_id, credentialDisplayLabel(item, locale));
+    }
+  }
+  return Array.from(labels.values());
+}
+
+/** Format a folded member's key labels, collapsing the tail. */
+export function foldedMemberCredentialSummary(
+  member: Pick<FoldedMember, "subItems">,
+  locale: "zh-CN" | "en-US",
+) {
+  const labels = foldedMemberCredentialLabels(member, locale);
+  if (labels.length <= 2) return labels.join(" · ");
+  return `${labels.slice(0, 2).join(" · ")} +${labels.length - 2}`;
+}
+
 /** Format the source channel label for a folded member. */
 export function foldedMemberSourceLabel(
   member: FoldedMember,
@@ -71,8 +95,9 @@ export function foldedMemberSourceLabel(
   const channelNames = Array.from(
     new Set(member.subItems.map((item) => item.channel_name).filter(Boolean)),
   );
-  const credentialLabel = credentialDisplayLabel(member, locale);
-  return [...channelNames, credentialLabel].join(" · ");
+  return [...channelNames, foldedMemberCredentialSummary(member, locale)].join(
+    " · ",
+  );
 }
 
 /** Format a model price for compact display. */
@@ -202,10 +227,9 @@ export function modelGroupItemKey(
 /** Build the stable key used to fold equivalent model members. */
 export function modelFoldKey(
   protocolConfigId: string,
-  credentialId: string,
   modelName: string,
 ): string {
-  return `${protocolConfigId}::${credentialId}::${modelName}`;
+  return `${protocolConfigId}::${modelName}`;
 }
 
 /** Build the shared channel identity used by failover ordering. */
@@ -223,11 +247,7 @@ export function buildGroupDisplayMembers(
   const memberMap = new Map<string, GroupDisplayMember>();
 
   for (const item of items) {
-    const key = modelFoldKey(
-      item.protocol_config_id,
-      item.credential_id,
-      item.model_name,
-    );
+    const key = modelFoldKey(item.protocol_config_id, item.model_name);
     const channelName = item.channel_name || item.channel_id;
 
     if (!memberMap.has(key)) {
@@ -236,6 +256,7 @@ export function buildGroupDisplayMembers(
         model_name: item.model_name,
         credential_name: item.credential_name,
         credential_number: item.credential_number,
+        credential_count: 0,
         channel_names: [],
         protocols: [],
         items: [],
@@ -262,7 +283,11 @@ export function buildGroupDisplayMembers(
     }
   }
 
-  return Array.from(memberMap.values());
+  return Array.from(memberMap.values()).map((member) => ({
+    ...member,
+    credential_count: new Set(member.items.map((item) => item.credential_id))
+      .size,
+  }));
 }
 
 /** Group display members by their channel while preserving first appearance. */

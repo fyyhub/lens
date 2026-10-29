@@ -11,11 +11,7 @@ import {
 } from "./modelGroupFormatting";
 
 function formItemMemberKey(item: FormItem) {
-  return modelFoldKey(
-    item.protocol_config_id,
-    item.credential_id,
-    item.model_name,
-  );
+  return modelFoldKey(item.protocol_config_id, item.model_name);
 }
 
 function formItemChannelKey(item: FormItem) {
@@ -76,10 +72,12 @@ export function useGroupMembers(
   );
   const visibleFoldedMembers = useMemo(() => {
     return foldedMembers.flatMap((member, index) => {
-      const credHealth = credentialHealthIndex.byCredentialId.get(
-        member.credential_id,
-      );
-      const isCooled = Boolean(credHealth && !credHealth.available);
+      const isCooled = member.subItems.some((item) => {
+        const credHealth = credentialHealthIndex.byCredentialId.get(
+          item.credential_id,
+        );
+        return Boolean(credHealth && !credHealth.available);
+      });
       const hasProblem =
         member.invalid_item_count > 0 ||
         member.unavailable_item_count > 0 ||
