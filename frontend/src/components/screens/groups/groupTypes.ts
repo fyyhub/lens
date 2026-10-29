@@ -98,6 +98,7 @@ export type GroupDisplayMember = {
   model_name: string;
   credential_name: string;
   credential_number: number;
+  credential_count: number;
   channel_names: string[];
   protocols: ProtocolKind[];
   items: ModelGroup["items"];

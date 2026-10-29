@@ -30,6 +30,7 @@ import { protocolBadgeClassName, protocolLabel } from "@/lib/protocols";
 import type { FoldedMember, GroupCardDragging, GroupRow } from "./groupTypes";
 import {
   credentialDisplayLabel,
+  foldedMemberCredentialSummary,
   foldedMemberSourceLabel,
   modelGroupItemReasonLabel,
   modelGroupReasonsForState,
@@ -96,10 +97,13 @@ export function ModelGroupMembers({
       );
       const cooledCredentialMap = new Map<string, AggregatedCredentialHealth>();
       for (const member of channel.members) {
-        const credId = member.items[0]?.credential_id ?? "";
-        const credHealth = credentialHealthIndex.byCredentialId.get(credId);
-        if (credHealth && !credHealth.available) {
-          cooledCredentialMap.set(credId, credHealth);
+        for (const item of member.items) {
+          const credHealth = credentialHealthIndex.byCredentialId.get(
+            item.credential_id,
+          );
+          if (credHealth && !credHealth.available) {
+            cooledCredentialMap.set(item.credential_id, credHealth);
+          }
         }
       }
       const cooledCredentials = Array.from(cooledCredentialMap.values());
@@ -207,14 +211,17 @@ export function ModelGroupMembers({
 
   return group.display_members.map((member, index) => {
     const channelName = member.channel_names.slice(0, 2).join(" · ") || "n/a";
-    const sourceLabel = `${channelName} · ${credentialDisplayLabel(member, locale)}`;
+    const credentialLabel = credentialDisplayLabel(member, locale);
+    const sourceLabel = `${channelName} · ${credentialLabel}${
+      member.credential_count > 1 ? ` +${member.credential_count - 1}` : ""
+    }`;
     const enabled = member.ready_item_count > 0;
-    const credentialId = member.items[0]?.credential_id ?? "";
-    const credentialHealth =
-      credentialHealthIndex.byCredentialId.get(credentialId);
-    const isCredentialCooled = Boolean(
-      credentialHealth && !credentialHealth.available,
-    );
+    const cooledCredential = member.items
+      .map((item) =>
+        credentialHealthIndex.byCredentialId.get(item.credential_id),
+      )
+      .find((health) => health && !health.available);
+    const isCredentialCooled = Boolean(cooledCredential);
     const invalidReasons = modelGroupReasonsForState(member.items, "invalid");
     const unavailableReasons = modelGroupReasonsForState(
       member.items,
@@ -270,7 +277,7 @@ export function ModelGroupMembers({
             · {sourceLabel}
           </span>
         </Button>
-        {isCredentialCooled && credentialHealth ? (
+        {cooledCredential ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <Badge
@@ -285,11 +292,11 @@ export function ModelGroupMembers({
             <TooltipContent side="bottom" className="max-w-sm">
               <div className="grid gap-0.5 text-xs">
                 <div className="font-medium">
-                  {formatCredentialCooldownSummary(credentialHealth, locale)}
+                  {formatCredentialCooldownSummary(cooledCredential, locale)}
                 </div>
-                {credentialHealth.last_error ? (
+                {cooledCredential.last_error ? (
                   <div className="line-clamp-2 text-background/80">
-                    {credentialHealth.last_error}
+                    {cooledCredential.last_error}
                   </div>
                 ) : null}
               </div>
@@ -449,15 +456,13 @@ export function FoldedMemberRow({
   locale: "zh-CN" | "en-US";
 }) {
   const { credentialHealthIndex } = useRouterSnapshot();
-  const credentialHealth = credentialHealthIndex.byCredentialId.get(
-    member.credential_id,
-  );
-  const isCredentialCooled = Boolean(
-    credentialHealth && !credentialHealth.available,
-  );
+  const cooledCredential = member.subItems
+    .map((item) => credentialHealthIndex.byCredentialId.get(item.credential_id))
+    .find((health) => health && !health.available);
+  const isCredentialCooled = Boolean(cooledCredential);
   const sourceLabel = showChannelName
     ? foldedMemberSourceLabel(member, locale)
-    : credentialDisplayLabel(member, locale);
+    : foldedMemberCredentialSummary(member, locale);
   const enabled = member.ready_item_count > 0;
   const manuallyEnabled = member.enabled_item_count > 0;
   const partiallyEnabled = manuallyEnabled && member.disabled_item_count > 0;
@@ -521,7 +526,7 @@ export function FoldedMemberRow({
         </div>
       </div>
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-        {isCredentialCooled && credentialHealth ? (
+        {cooledCredential ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <Badge
@@ -530,12 +535,12 @@ export function FoldedMemberRow({
                 tabIndex={0}
               >
                 <TriangleAlert data-icon="inline-start" />
-                {formatCredentialCooldownSummary(credentialHealth, locale)}
+                {formatCredentialCooldownSummary(cooledCredential, locale)}
               </Badge>
             </TooltipTrigger>
             <TooltipContent className="max-w-sm">
-              {credentialHealth.last_error ||
-                formatCredentialCooldownSummary(credentialHealth, locale)}
+              {cooledCredential.last_error ||
+                formatCredentialCooldownSummary(cooledCredential, locale)}
             </TooltipContent>
           </Tooltip>
         ) : null}
