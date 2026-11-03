@@ -45,9 +45,12 @@ export function GroupsOverview(props: GroupsOverviewProps) {
         strategyFilter={props.strategyFilter}
         sortBy={props.sortBy}
         activeFilterCount={props.activeFilterCount}
+        channelFilter={props.channelFilter}
+        channelOptions={props.channelOptions}
         setSearch={props.setSearch}
         setStrategyFilter={props.setStrategyFilter}
         setSortBy={props.setSortBy}
+        setChannelFilter={props.setChannelFilter}
         resetFilters={props.resetFilters}
       />
     </div>

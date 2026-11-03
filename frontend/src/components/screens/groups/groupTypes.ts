@@ -167,9 +167,12 @@ export interface GroupsOverviewProps {
   strategyFilter: "all" | RoutingStrategy;
   sortBy: GroupSort;
   activeFilterCount: number;
+  channelFilter: string;
+  channelOptions: string[];
   setSearch: Dispatch<SetStateAction<string>>;
   setStrategyFilter: Dispatch<SetStateAction<"all" | RoutingStrategy>>;
   setSortBy: Dispatch<SetStateAction<GroupSort>>;
+  setChannelFilter: (value: string) => void;
   resetFilters: () => void;
   openEdit: (item: ModelGroup) => void;
   changeStrategy: (group: GroupRow, strategy: RoutingStrategy) => void;

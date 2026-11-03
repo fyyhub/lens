@@ -201,9 +201,12 @@ export function GroupsScreen() {
           strategyFilter={filters.strategyFilter}
           sortBy={filters.sortBy}
           activeFilterCount={filters.activeFilterCount}
+          channelFilter={filters.channelFilter}
+          channelOptions={filters.channelOptions}
           setSearch={filters.setSearch}
           setStrategyFilter={filters.setStrategyFilter}
           setSortBy={filters.setSortBy}
+          setChannelFilter={filters.setChannelFilter}
           resetFilters={filters.resetFilters}
           openEdit={editor.openEdit}
           changeStrategy={commands.changeStrategy}
