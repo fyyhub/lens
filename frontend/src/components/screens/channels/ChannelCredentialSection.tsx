@@ -295,7 +295,7 @@ export function ChannelCredentialSection({
             >
               <FieldGroup className="grid min-w-0 gap-2 md:grid-cols-[minmax(0,1.65fr)_minmax(0,0.85fr)_minmax(7rem,0.8fr)_32px_32px] md:items-end">
                 <Field>
-                  <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                     <FieldLabel>
                       {credentialIndexLabel(index, locale)}
                     </FieldLabel>
@@ -304,7 +304,7 @@ export function ChannelCredentialSection({
                         <TooltipTrigger asChild>
                           <Badge
                             variant="destructive"
-                            className="px-1.5 py-0 text-[10px]"
+                            className="max-w-full px-1.5 py-0 text-[10px] whitespace-normal"
                             tabIndex={0}
                           >
                             {issue.summary}
@@ -399,7 +399,7 @@ export function ChannelCredentialSection({
               </FieldGroup>
               {issue ? (
                 <div
-                  className="truncate text-xs text-destructive"
+                  className="line-clamp-2 break-all text-xs text-destructive"
                   title={issue.detail}
                 >
                   {locale === "zh-CN" ? "最近报错：" : "Last error: "}
