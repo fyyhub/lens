@@ -132,7 +132,7 @@ export function ModelGroupMembers({
             variant="ghost"
             size="sm"
             draggable={busyId !== group.id}
-            className="h-auto min-w-0 max-w-full cursor-grab rounded-full rounded-r-none border-0 px-3 py-1.5 active:cursor-grabbing"
+            className="h-auto min-w-0 flex-1 cursor-grab rounded-full rounded-r-none border-0 px-3 py-1.5 active:cursor-grabbing"
             onDragStart={() =>
               setCardDragging({ groupId: group.id, kind: "channel", index })
             }
@@ -159,7 +159,7 @@ export function ModelGroupMembers({
               <TooltipTrigger asChild>
                 <Badge
                   variant="outline"
-                  className="mr-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                  className="mr-1 shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
                   tabIndex={0}
                 >
                   <TriangleAlert data-icon="inline-start" />
@@ -254,7 +254,7 @@ export function ModelGroupMembers({
           variant="ghost"
           size="sm"
           draggable={busyId !== group.id}
-          className="h-auto min-w-0 max-w-full cursor-grab rounded-full rounded-r-none border-0 px-3 py-1.5 active:cursor-grabbing"
+          className="h-auto min-w-0 flex-1 cursor-grab rounded-full rounded-r-none border-0 px-3 py-1.5 active:cursor-grabbing"
           onDragStart={() =>
             setCardDragging({ groupId: group.id, kind: "member", index })
           }
@@ -282,7 +282,7 @@ export function ModelGroupMembers({
             <TooltipTrigger asChild>
               <Badge
                 variant="outline"
-                className="mr-1 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                className="mr-1 shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
                 tabIndex={0}
               >
                 <TriangleAlert data-icon="inline-start" />
@@ -306,7 +306,11 @@ export function ModelGroupMembers({
         {invalidReasons.length ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant="destructive" className="mr-1" tabIndex={0}>
+              <Badge
+                variant="destructive"
+                className="mr-1 shrink-0"
+                tabIndex={0}
+              >
                 <AlertCircle data-icon="inline-start" />
                 {locale === "zh-CN" ? "配置错误" : "Invalid"}
               </Badge>
@@ -321,7 +325,7 @@ export function ModelGroupMembers({
         {unavailableReasons.length ? (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Badge variant="outline" className="mr-1" tabIndex={0}>
+              <Badge variant="outline" className="mr-1 shrink-0" tabIndex={0}>
                 <Ban data-icon="inline-start" />
                 {locale === "zh-CN" ? "依赖不可用" : "Dependency unavailable"}
               </Badge>
