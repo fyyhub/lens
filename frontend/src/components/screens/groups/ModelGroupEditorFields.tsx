@@ -1,11 +1,6 @@
 import { Field, FieldLabel } from "@/components/ui/Field";
 import { Input } from "@/components/ui/Input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/ToggleGroup";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/Tooltip";
 import type { RoutingStrategy } from "@/lib/api/groups";
 import { cn } from "@/lib/classNames";
 import {
@@ -41,44 +36,20 @@ export function CompactPriceSummary({
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          <span>
-            {metricLabel("input", locale)} ${formatMoney(inputPrice)}
-          </span>
-          <span>
-            {metricLabel("output", locale)} ${formatMoney(outputPrice)}
-          </span>
-          <span>
-            {metricLabel("cache_read", locale)} ${formatMoney(cacheReadPrice)}
-          </span>
-          <span>
-            {metricLabel("cache_write", locale)} ${formatMoney(cacheWritePrice)}
-          </span>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="top" align="start">
-        <div className="grid gap-1">
-          <div>
-            {metricLabel("input", locale)}: ${formatMoney(inputPrice)} / 1M
-            tokens
-          </div>
-          <div>
-            {metricLabel("output", locale)}: ${formatMoney(outputPrice)} / 1M
-            tokens
-          </div>
-          <div>
-            {metricLabel("cache_read", locale)}: ${formatMoney(cacheReadPrice)}{" "}
-            / 1M tokens
-          </div>
-          <div>
-            {metricLabel("cache_write", locale)}: $
-            {formatMoney(cacheWritePrice)} / 1M tokens
-          </div>
-        </div>
-      </TooltipContent>
-    </Tooltip>
+    <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+      <span>
+        {metricLabel("input", locale)} ${formatMoney(inputPrice)}
+      </span>
+      <span>
+        {metricLabel("output", locale)} ${formatMoney(outputPrice)}
+      </span>
+      <span>
+        {metricLabel("cache_read", locale)} ${formatMoney(cacheReadPrice)}
+      </span>
+      <span>
+        {metricLabel("cache_write", locale)} ${formatMoney(cacheWritePrice)}
+      </span>
+    </div>
   );
 }
 
