@@ -130,6 +130,18 @@ export function useGroupFilters(
     "all",
   );
   const [sortBy, setSortBy] = useState<GroupSort>("members-desc");
+  const [channelFilter, setChannelFilter] = useState("all");
+  const channelOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const group of groupRows) {
+      for (const name of group.channel_names) {
+        if (name) names.add(name);
+      }
+    }
+    return Array.from(names).sort((left, right) =>
+      left.localeCompare(right, locale),
+    );
+  }, [groupRows, locale]);
   const modelPrefixOptions = useMemo(
     () =>
       buildModelPrefixOptions(
@@ -152,6 +164,12 @@ export function useGroupFilters(
         return false;
       }
       if (strategyFilter !== "all" && group.strategy !== strategyFilter) {
+        return false;
+      }
+      if (
+        channelFilter !== "all" &&
+        !group.channel_names.includes(channelFilter)
+      ) {
         return false;
       }
       if (!keyword) return true;
@@ -184,6 +202,7 @@ export function useGroupFilters(
       );
     });
   }, [
+    channelFilter,
     effectiveSelectedModelPrefix,
     groupRows,
     locale,
@@ -197,6 +216,7 @@ export function useGroupFilters(
     setSearch("");
     setStrategyFilter("all");
     setSortBy("members-desc");
+    setChannelFilter("all");
   }
 
   return {
@@ -204,12 +224,16 @@ export function useGroupFilters(
       effectiveSelectedModelPrefix !== "all",
       Boolean(search.trim()),
       strategyFilter !== "all",
+      channelFilter !== "all",
     ].filter(Boolean).length,
+    channelFilter,
+    channelOptions,
     effectiveSelectedModelPrefix,
     hasModelPrefixOptions: modelPrefixOptions.length > 0,
     modelPrefixOptions,
     resetFilters,
     search,
+    setChannelFilter,
     setSearch,
     setSelectedModelPrefix,
     setSortBy,

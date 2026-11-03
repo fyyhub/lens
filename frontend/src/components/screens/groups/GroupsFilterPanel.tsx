@@ -24,9 +24,12 @@ interface GroupsFilterPanelProps {
   strategyFilter: "all" | RoutingStrategy;
   sortBy: GroupSort;
   activeFilterCount: number;
+  channelFilter: string;
+  channelOptions: string[];
   setSearch: (value: string) => void;
   setStrategyFilter: (value: "all" | RoutingStrategy) => void;
   setSortBy: (value: GroupSort) => void;
+  setChannelFilter: (value: string) => void;
   resetFilters: () => void;
 }
 
@@ -37,9 +40,12 @@ export function GroupsFilterPanel({
   strategyFilter,
   sortBy,
   activeFilterCount,
+  channelFilter,
+  channelOptions,
   setSearch,
   setStrategyFilter,
   setSortBy,
+  setChannelFilter,
   resetFilters,
 }: GroupsFilterPanelProps) {
   const strategyOptions: Array<{
@@ -127,6 +133,28 @@ export function GroupsFilterPanel({
                   </Button>
                 ))}
               </div>
+            </Field>
+            <Field>
+              <FieldLabel>{locale === "zh-CN" ? "渠道" : "Channel"}</FieldLabel>
+              <Select
+                value={channelFilter}
+                onValueChange={setChannelFilter}
+                disabled={channelOptions.length === 0}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {locale === "zh-CN" ? "全部渠道" : "All channels"}
+                  </SelectItem>
+                  {channelOptions.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
             <Field>
               <FieldLabel>{locale === "zh-CN" ? "排序" : "Sort"}</FieldLabel>

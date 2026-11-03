@@ -215,7 +215,6 @@ export function GroupEditorDialog(props: GroupEditorDialogProps) {
                 </>
               ) : null}
             </div>
-
           </form>
         </AppDialogContent>
       </Dialog>
