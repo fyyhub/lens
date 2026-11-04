@@ -57,6 +57,8 @@ export function useChannelQueries(locale: Locale) {
             : 0,
           model_count: siteModelCount(site),
           endpoint_summary: siteEndpointSummary(site, locale),
+          key_count:
+            runtimeSummary?.total_key_count ?? enabledCredentials.length,
           cooled_key_count: runtimeSummary?.cooled_key_count ?? 0,
           available_key_count:
             runtimeSummary?.available_key_count ?? enabledCredentials.length,
