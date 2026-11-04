@@ -1,4 +1,4 @@
-import { Globe2, KeyRound, Trash2, TriangleAlert } from "lucide-react";
+import { Globe2, KeyRound, Trash2 } from "lucide-react";
 import { type Dispatch, type SetStateAction, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -118,82 +118,74 @@ export function ChannelsOverview({
                             {site.name}
                           </ItemTitle>
                           {site.key_count > 0 ? (
-                            <Badge
-                              variant="outline"
-                              className="shrink-0 text-muted-foreground"
-                            >
-                              <KeyRound data-icon="inline-start" />
-                              {locale === "zh-CN"
-                                ? `${site.key_count} 个密钥`
-                                : `${site.key_count} ${
-                                    site.key_count === 1 ? "key" : "keys"
-                                  }`}
-                            </Badge>
-                          ) : null}
-                          {site.cooled_key_count > 0 ? (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Badge
                                   variant={
+                                    site.cooled_key_count > 0 &&
                                     site.available_key_count === 0
                                       ? "destructive"
                                       : "outline"
                                   }
                                   className={
+                                    site.cooled_key_count > 0 &&
                                     site.available_key_count > 0
-                                      ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                                      : undefined
+                                      ? "shrink-0 border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                                      : "shrink-0 text-muted-foreground"
                                   }
                                   tabIndex={0}
                                 >
-                                  <TriangleAlert data-icon="inline-start" />
-                                  {site.available_key_count === 0
-                                    ? locale === "zh-CN"
-                                      ? `全部密钥冷却 (${site.cooled_key_count})`
-                                      : `All keys cooled (${site.cooled_key_count})`
-                                    : locale === "zh-CN"
-                                      ? `${site.cooled_key_count} 个密钥冷却中`
-                                      : `${site.cooled_key_count} ${
-                                          site.cooled_key_count === 1
-                                            ? "key"
-                                            : "keys"
-                                        } cooling`}
+                                  <KeyRound data-icon="inline-start" />
+                                  {locale === "zh-CN"
+                                    ? `${site.key_count} 个密钥`
+                                    : `${site.key_count} ${
+                                        site.key_count === 1 ? "key" : "keys"
+                                      }`}
+                                  {site.cooled_key_count > 0 ? (
+                                    <span className="font-medium">
+                                      {locale === "zh-CN"
+                                        ? `· ${site.cooled_key_count} 失效`
+                                        : `· ${site.cooled_key_count} failed`}
+                                    </span>
+                                  ) : null}
                                 </Badge>
                               </TooltipTrigger>
-                              <TooltipContent
-                                side="bottom"
-                                align="start"
-                                className="grid max-w-sm gap-1.5"
-                              >
-                                <div className="font-medium">
-                                  {locale === "zh-CN"
-                                    ? "运行时失效/冷却密钥（点击卡片可批量清理）"
-                                    : "Cooling / failed keys (click card to clean up)"}
-                                </div>
-                                {site.cooled_credentials.map((cred) => (
-                                  <div
-                                    key={cred.credential_id}
-                                    className="grid gap-0.5 text-xs"
-                                  >
-                                    <div className="font-medium">
-                                      {formatHealthCredentialLabel(
-                                        cred,
-                                        locale,
-                                      )}{" "}
-                                      ·{" "}
-                                      {formatCredentialCooldownSummary(
-                                        cred,
-                                        locale,
-                                      )}
-                                    </div>
-                                    {cred.last_error ? (
-                                      <div className="line-clamp-2 text-background/80">
-                                        {cred.last_error}
-                                      </div>
-                                    ) : null}
+                              {site.cooled_key_count > 0 ? (
+                                <TooltipContent
+                                  side="bottom"
+                                  align="start"
+                                  className="grid max-w-sm gap-1.5"
+                                >
+                                  <div className="font-medium">
+                                    {locale === "zh-CN"
+                                      ? "运行时失效/冷却密钥（点击卡片可批量清理）"
+                                      : "Cooling / failed keys (click card to clean up)"}
                                   </div>
-                                ))}
-                              </TooltipContent>
+                                  {site.cooled_credentials.map((cred) => (
+                                    <div
+                                      key={cred.credential_id}
+                                      className="grid gap-0.5 text-xs"
+                                    >
+                                      <div className="font-medium">
+                                        {formatHealthCredentialLabel(
+                                          cred,
+                                          locale,
+                                        )}{" "}
+                                        ·{" "}
+                                        {formatCredentialCooldownSummary(
+                                          cred,
+                                          locale,
+                                        )}
+                                      </div>
+                                      {cred.last_error ? (
+                                        <div className="line-clamp-2 text-background/80">
+                                          {cred.last_error}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  ))}
+                                </TooltipContent>
+                              ) : null}
                             </Tooltip>
                           ) : null}
                         </div>
