@@ -76,6 +76,7 @@ export type SiteRow = Site & {
   enabled_protocol_channel_count: number;
   model_count: number;
   endpoint_summary: string;
+  key_count: number;
   cooled_key_count: number;
   available_key_count: number;
   cooled_credentials: AggregatedCredentialHealth[];

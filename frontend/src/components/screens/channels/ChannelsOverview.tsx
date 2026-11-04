@@ -1,4 +1,4 @@
-import { Globe2, Trash2, TriangleAlert } from "lucide-react";
+import { Globe2, KeyRound, Trash2, TriangleAlert } from "lucide-react";
 import { type Dispatch, type SetStateAction, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -117,6 +117,19 @@ export function ChannelsOverview({
                           <ItemTitle className="truncate text-base">
                             {site.name}
                           </ItemTitle>
+                          {site.key_count > 0 ? (
+                            <Badge
+                              variant="outline"
+                              className="shrink-0 text-muted-foreground"
+                            >
+                              <KeyRound data-icon="inline-start" />
+                              {locale === "zh-CN"
+                                ? `${site.key_count} 个密钥`
+                                : `${site.key_count} ${
+                                    site.key_count === 1 ? "key" : "keys"
+                                  }`}
+                            </Badge>
+                          ) : null}
                           {site.cooled_key_count > 0 ? (
                             <Tooltip>
                               <TooltipTrigger asChild>
