@@ -60,6 +60,32 @@ def test_update_model_price_upserts_existing_group_price(
     assert payload["image_price_per_image"] == 0
 
 
+def test_update_model_price_supports_slash_in_model_key(
+    client,
+    admin_headers,
+    create_model_group,
+) -> None:
+    create_model_group(name="z-ai/glm-5.3-flash")
+
+    response = client.put(
+        "/api/admin/model-prices/z-ai%2Fglm-5.3-flash",
+        headers=admin_headers,
+        json={
+            "model_key": "z-ai/glm-5.3-flash",
+            "display_name": "z-ai/glm-5.3-flash",
+            "input_price_per_million": 0.11,
+            "output_price_per_million": 0.35,
+            "cache_read_price_per_million": 0.02,
+            "cache_write_price_per_million": 0,
+            "image_price_per_image": 0,
+            "pricing_mode": "tokens",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["model_key"] == "z-ai/glm-5.3-flash"
+
+
 def test_sync_model_prices_fetches_source_and_returns_updated_prices(
     client,
     admin_headers,

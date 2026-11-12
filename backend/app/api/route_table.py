@@ -337,7 +337,7 @@ def register_model_groups(app: FastAPI) -> None:
 
 def register_model_prices(app: FastAPI) -> None:
     app.add_api_route(
-        "/api/admin/model-prices/{model_key}",
+        "/api/admin/model-prices/{model_key:path}",
         update_model_price,
         methods=["PUT"],
         response_model=ModelPriceItem,
